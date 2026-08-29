@@ -45,22 +45,44 @@ toggleBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
 
--- UI TITLE
+-- HEADER SECTION
+local headerFrame = Instance.new("Frame")
+headerFrame.Size = UDim2.new(1, 0, 0, 30)
+headerFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+headerFrame.BorderSizePixel = 0
+headerFrame.Parent = mainFrame
+
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 25)
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = " FINISH THE WORD (V30)"
 titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
-titleLabel.Parent = mainFrame
+titleLabel.Parent = headerFrame
+
+-- HEADER DIVIDER
+local headerDivider = Instance.new("Frame")
+headerDivider.Size = UDim2.new(1, 0, 0, 2)
+headerDivider.Position = UDim2.new(0, 0, 0, 30)
+headerDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+headerDivider.BorderSizePixel = 0
+headerDivider.Parent = mainFrame
+
+-- CONTROLS SECTION
+local controlsSection = Instance.new("Frame")
+controlsSection.Size = UDim2.new(1, 0, 0, 155)
+controlsSection.Position = UDim2.new(0, 0, 0, 32)
+controlsSection.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+controlsSection.BorderSizePixel = 0
+controlsSection.Parent = mainFrame
 
 -- BUTTON CONTAINER
 local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, -20, 0, 148)
-buttonContainer.Position = UDim2.new(0, 10, 0, 30)
+buttonContainer.Size = UDim2.new(1, -20, 1, 0)
+buttonContainer.Position = UDim2.new(0, 10, 0, 5)
 buttonContainer.BackgroundTransparency = 1
-buttonContainer.Parent = mainFrame
+buttonContainer.Parent = controlsSection
 
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.Parent = buttonContainer
@@ -89,18 +111,33 @@ local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60)
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -20, 1, -185)
-scrollFrame.Position = UDim2.new(0, 10, 0, 180)
-scrollFrame.BackgroundTransparency = 1
+scrollFrame.Size = UDim2.new(1, 0, 1, -192)
+scrollFrame.Position = UDim2.new(0, 0, 0, 192)
+scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
 scrollFrame.CanvasSize = UDim2.new(0, 0, 40, 0)
 scrollFrame.Parent = mainFrame
 
+-- CONSOLE PADDING
+local consolePadding = Instance.new("UIPadding")
+consolePadding.PaddingLeft = UDim.new(0, 10)
+consolePadding.PaddingRight = UDim.new(0, 10)
+consolePadding.PaddingTop = UDim.new(0, 5)
+consolePadding.Parent = scrollFrame
+
 local uiLayout = Instance.new("UIListLayout")
 uiLayout.Parent = scrollFrame
 uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiLayout.Padding = UDim.new(0, 2)
+
+-- CONSOLE DIVIDER
+local consoleDivider = Instance.new("Frame")
+consoleDivider.Size = UDim2.new(1, 0, 0, 2)
+consoleDivider.Position = UDim2.new(0, 0, 0, 187)
+consoleDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+consoleDivider.BorderSizePixel = 0
+consoleDivider.Parent = mainFrame
 
 local function logMessage(text, color)
     if not isRunning then return end
@@ -108,13 +145,18 @@ local function logMessage(text, color)
     msg.Size = UDim2.new(1, 0, 0, 0)
     msg.AutomaticSize = Enum.AutomaticSize.Y
     msg.TextWrapped = true
-    msg.BackgroundTransparency = 1
+    msg.BackgroundTransparency = 0.8
+    msg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     msg.TextColor3 = color or Color3.fromRGB(0, 255, 150)
     msg.TextSize = 13
     msg.Font = Enum.Font.Code
     msg.TextXAlignment = Enum.TextXAlignment.Left
     msg.Text = " " .. text
     msg.Parent = scrollFrame
+    
+    local msgCorner = Instance.new("UICorner")
+    msgCorner.CornerRadius = UDim.new(0, 4)
+    msgCorner.Parent = msg
 end
 
 logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
