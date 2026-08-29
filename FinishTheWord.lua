@@ -26,7 +26,7 @@ toggleBtn.Text = "👁️ TOGGLE UI"
 toggleBtn.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 😎
+toggleCorner.CornerRadius = UDim.new(0, 8)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
@@ -153,7 +153,7 @@ local validWordsDict = {}
 local usedWords = {} 
 local missingPrefixes = {} 
 
--- Fetch the dictionary directly from GitHub
+-- Fetch from GitHub instead of local file
 local success, fileData = pcall(function() 
     return game:HttpGet("https://raw.githubusercontent.com/lagnasonjhondavedepaz-star/finish-the-word-database/refs/heads/main/word-notes.txt") 
 end)
@@ -226,7 +226,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
     end
     
     if willStartDelay then
-        task.wait(2) -- NERFED: 3 seconds to 2 seconds
+        task.wait(2)
     else
         if prefixLength >= 2 then
             task.wait(math.random(1500, 3000) / 1000)
@@ -328,9 +328,6 @@ local function typeRemainingLetters(fullWord, prefixLength)
             if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
                 doubleCheckCount = doubleCheckCount + 1
                 task.wait(math.random(500, 1000) / 1000) 
-            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
-                doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(400, 800) / 1000) 
             end
         end
     end
@@ -364,11 +361,9 @@ local function typeRemainingLetters(fullWord, prefixLength)
     if not isRunning then return end
     
     if #fullWord >= 15 then
-        logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
         task.wait(3)
     elseif math.random(1, 100) <= 5 then
-        logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
-        task.wait(4) -- NERFED: 5 seconds to 4 seconds
+        task.wait(4)
     else
         task.wait(math.random(400, 800) / 1000)
     end
@@ -470,21 +465,16 @@ task.spawn(function()
                                 if #exactSuffixMatches > 0 then
                                     finalPool = exactSuffixMatches
                                     foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."]", Color3.fromRGB(0, 255, 0))
                                     break
                                 elseif #fallbackSuffixMatches > 0 then
                                     finalPool = fallbackSuffixMatches
                                     foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."] (Ignored Length)", Color3.fromRGB(200, 200, 0))
                                     break
                                 end
                             end
                         end
                         
                         if not foundSuffix then
-                            if suffixModeEnabled then
-                                logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0))
-                            end
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
