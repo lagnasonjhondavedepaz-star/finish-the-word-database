@@ -16,17 +16,17 @@ local isRunning = true
 
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 120, 0, 35)
-toggleBtn.Position = UDim2.new(0.5, -60, 0, 10)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-toggleBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+toggleBtn.Size = UDim2.new(0, 100, 0, 28)
+toggleBtn.Position = UDim2.new(0.5, -50, 0, 12)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 13
-toggleBtn.Text = " TOGGLE UI"
+toggleBtn.TextSize = 11
+toggleBtn.Text = "◉ CONSOLE"
 toggleBtn.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
@@ -41,8 +41,19 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 12)
 mainCorner.Parent = mainFrame
 
+local function updateToggleButton()
+    if mainFrame.Visible then
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+        toggleBtn.Text = "◉ CONSOLE"
+    else
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        toggleBtn.Text = "○ HIDDEN"
+    end
+end
+
 toggleBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
+    updateToggleButton()
 end)
 
 -- HEADER SECTION
