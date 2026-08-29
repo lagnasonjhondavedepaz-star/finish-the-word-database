@@ -153,7 +153,11 @@ local validWordsDict = {}
 local usedWords = {} 
 local missingPrefixes = {} 
 
-local success, fileData = pcall(function() return readfile("word-notes(1).txt") end)
+-- Fetch the dictionary directly from GitHub
+local success, fileData = pcall(function() 
+    return game:HttpGet("https://raw.githubusercontent.com/lagnasonjhondavedepaz-star/finish-the-word-database/refs/heads/main/word-notes.txt") 
+end)
+
 if success and fileData then
     for word in string.gmatch(fileData, "[^\r\n]+") do
         local cleanWord = word:match("^[%a]+$")
@@ -163,9 +167,9 @@ if success and fileData then
             validWordsDict[upperWord] = true
         end
     end
-    logMessage("Loaded " .. #wordsTable .. " words.", Color3.fromRGB(0, 255, 255))
+    logMessage("Loaded " .. #wordsTable .. " words from GitHub.", Color3.fromRGB(0, 255, 255))
 else
-    logMessage("ERROR: Missing word-notes(1).txt in workspace!", Color3.fromRGB(255, 50, 50))
+    logMessage("ERROR: Failed to fetch dictionary from GitHub!", Color3.fromRGB(255, 50, 50))
     return
 end
 
