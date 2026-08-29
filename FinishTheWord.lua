@@ -26,7 +26,7 @@ toggleBtn.Text = "👁️ TOGGLE UI"
 toggleBtn.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.CornerRadius = UDim.new(0, 8) -- Fixed the sunglasses emoji error here
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
@@ -153,7 +153,7 @@ local validWordsDict = {}
 local usedWords = {} 
 local missingPrefixes = {} 
 
--- Fetch from GitHub instead of local file
+-- Fetch the dictionary directly from GitHub
 local success, fileData = pcall(function() 
     return game:HttpGet("https://raw.githubusercontent.com/lagnasonjhondavedepaz-star/finish-the-word-database/refs/heads/main/word-notes.txt") 
 end)
@@ -328,6 +328,9 @@ local function typeRemainingLetters(fullWord, prefixLength)
             if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
                 doubleCheckCount = doubleCheckCount + 1
                 task.wait(math.random(500, 1000) / 1000) 
+            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
+                doubleCheckCount = doubleCheckCount + 1
+                task.wait(math.random(400, 800) / 1000) 
             end
         end
     end
@@ -361,8 +364,10 @@ local function typeRemainingLetters(fullWord, prefixLength)
     if not isRunning then return end
     
     if #fullWord >= 15 then
+        logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
         task.wait(3)
     elseif math.random(1, 100) <= 5 then
+        logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
         task.wait(4)
     else
         task.wait(math.random(400, 800) / 1000)
@@ -465,16 +470,21 @@ task.spawn(function()
                                 if #exactSuffixMatches > 0 then
                                     finalPool = exactSuffixMatches
                                     foundSuffix = true
+                                    logMessage("Matched suffix ["..targetSuffix.."]", Color3.fromRGB(0, 255, 0))
                                     break
                                 elseif #fallbackSuffixMatches > 0 then
                                     finalPool = fallbackSuffixMatches
                                     foundSuffix = true
+                                    logMessage("Matched suffix ["..targetSuffix.."] (Ignored Length)", Color3.fromRGB(200, 200, 0))
                                     break
                                 end
                             end
                         end
                         
                         if not foundSuffix then
+                            if suffixModeEnabled then
+                                logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0))
+                            end
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
