@@ -242,14 +242,22 @@ updateTab.MouseButton1Click:Connect(function()
 end)
 
 -- SETTINGS PANEL CONTENT
+local settingsScroll = Instance.new("ScrollingFrame")
+settingsScroll.Size = UDim2.new(1, 0, 1, 0)
+settingsScroll.BackgroundTransparency = 1
+settingsScroll.BorderSizePixel = 0
+settingsScroll.ScrollBarThickness = 4
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+settingsScroll.Parent = settingsPanel
+
 local settingsPadding = Instance.new("UIPadding")
 settingsPadding.PaddingLeft = UDim.new(0, 15)
 settingsPadding.PaddingRight = UDim.new(0, 15)
 settingsPadding.PaddingTop = UDim.new(0, 15)
-settingsPadding.Parent = settingsPanel
+settingsPadding.Parent = settingsScroll
 
 local settingsLayout = Instance.new("UIListLayout")
-settingsLayout.Parent = settingsPanel
+settingsLayout.Parent = settingsScroll
 settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 settingsLayout.Padding = UDim.new(0, 12)
 
@@ -263,7 +271,7 @@ autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 autoAnswerLabel.Font = Enum.Font.GothamBold
 autoAnswerLabel.TextSize = 12
 autoAnswerLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoAnswerLabel.Parent = settingsPanel
+autoAnswerLabel.Parent = settingsScroll
 
 local labelPadding = Instance.new("UIPadding")
 labelPadding.PaddingLeft = UDim.new(0, 10)
@@ -276,7 +284,7 @@ autoAnswerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoAnswerToggle.Font = Enum.Font.GothamBold
 autoAnswerToggle.TextSize = 11
 autoAnswerToggle.Text = "✓ ENABLED"
-autoAnswerToggle.Parent = settingsPanel
+autoAnswerToggle.Parent = settingsScroll
 
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
@@ -305,7 +313,7 @@ usedWordsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 usedWordsLabel.Font = Enum.Font.Code
 usedWordsLabel.TextSize = 11
 usedWordsLabel.TextXAlignment = Enum.TextXAlignment.Left
-usedWordsLabel.Parent = settingsPanel
+usedWordsLabel.Parent = settingsScroll
 
 -- Update used words counter every second
 task.spawn(function()
@@ -413,18 +421,23 @@ updateLayout.Changed:Connect(function()
     updateScroll.CanvasSize = UDim2.new(0, 0, 0, updateLayout.AbsoluteContentSize.Y)
 end)
 
+-- Update settings canvas size when layout changes
+settingsLayout.Changed:Connect(function()
+    settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
+end)
+
 -- CONTROLS SECTION (moved to settings)
 local controlsSection = Instance.new("Frame")
-controlsSection.Size = UDim2.new(1, 0, 0, 125)
-controlsSection.Position = UDim2.new(0, 0, 0, 32)
-controlsSection.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+controlsSection.Size = UDim2.new(1, 0, 0, 0)
+controlsSection.AutomaticSize = Enum.AutomaticSize.Y
+controlsSection.BackgroundTransparency = 1
 controlsSection.BorderSizePixel = 0
-controlsSection.Parent = settingsPanel
+controlsSection.Parent = settingsScroll
 
 -- BUTTON CONTAINER
 local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, -20, 1, 0)
-buttonContainer.Position = UDim2.new(0, 10, 0, 5)
+buttonContainer.Size = UDim2.new(1, 0, 0, 0)
+buttonContainer.AutomaticSize = Enum.AutomaticSize.Y
 buttonContainer.BackgroundTransparency = 1
 buttonContainer.Parent = controlsSection
 
