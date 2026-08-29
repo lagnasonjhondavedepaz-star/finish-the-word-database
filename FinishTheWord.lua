@@ -71,7 +71,7 @@ headerDivider.Parent = mainFrame
 
 -- CONTROLS SECTION
 local controlsSection = Instance.new("Frame")
-controlsSection.Size = UDim2.new(1, 0, 0, 155)
+controlsSection.Size = UDim2.new(1, 0, 0, 125)
 controlsSection.Position = UDim2.new(0, 0, 0, 32)
 controlsSection.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 controlsSection.BorderSizePixel = 0
@@ -87,15 +87,15 @@ buttonContainer.Parent = controlsSection
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.Parent = buttonContainer
 buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-buttonLayout.Padding = UDim.new(0, 6)
+buttonLayout.Padding = UDim.new(0, 4)
 
 local function createButton(text, bgColor)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.Size = UDim2.new(1, 0, 0, 24)
     btn.BackgroundColor3 = bgColor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
+    btn.TextSize = 11
     btn.Text = text
     btn.Parent = buttonContainer
     
@@ -111,8 +111,8 @@ local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60)
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, -192)
-scrollFrame.Position = UDim2.new(0, 0, 0, 192)
+scrollFrame.Size = UDim2.new(1, 0, 1, -159)
+scrollFrame.Position = UDim2.new(0, 0, 0, 159)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
@@ -134,7 +134,7 @@ uiLayout.Padding = UDim.new(0, 2)
 -- CONSOLE DIVIDER
 local consoleDivider = Instance.new("Frame")
 consoleDivider.Size = UDim2.new(1, 0, 0, 2)
-consoleDivider.Position = UDim2.new(0, 0, 0, 187)
+consoleDivider.Position = UDim2.new(0, 0, 0, 157)
 consoleDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
 consoleDivider.BorderSizePixel = 0
 consoleDivider.Parent = mainFrame
