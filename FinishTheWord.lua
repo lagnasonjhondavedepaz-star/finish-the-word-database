@@ -109,6 +109,32 @@ headerDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
 headerDivider.BorderSizePixel = 0
 headerDivider.Parent = mainFrame
 
+-- WINDOW DRAGGING
+local dragging = false
+local dragOffset = nil
+
+headerFrame.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+        dragOffset = UDim2.new(mainFrame.Position.X.Scale, mainFrame.Position.X.Offset - mousePos.X, mainFrame.Position.Y.Scale, mainFrame.Position.Y.Offset - mousePos.Y)
+    end
+end)
+
+headerFrame.InputEnded:Connect(function(input, gameProcessed)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input, gameProcessed)
+    if dragging and dragOffset then
+        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+        mainFrame.Position = UDim2.new(dragOffset.X.Scale, mousePos.X + dragOffset.X.Offset, dragOffset.Y.Scale, mousePos.Y + dragOffset.Y.Offset)
+    end
+end)
+
 -- CONTROLS SECTION
 local controlsSection = Instance.new("Frame")
 controlsSection.Size = UDim2.new(1, 0, 0, 125)
