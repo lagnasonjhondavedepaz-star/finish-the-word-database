@@ -2,6 +2,7 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local coreGui = game:GetService("CoreGui")
 local VIM = game:GetService("VirtualInputManager")
+local UIS = game:GetService("UserInputService")
 
 if coreGui:FindFirstChild("DeltaScannerConsole") then
     coreGui.DeltaScannerConsole:Destroy()
@@ -11,8 +12,9 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DeltaScannerConsole"
 screenGui.Parent = coreGui
 
--- GLOBAL RUN STATE
+-- GLOBAL RUN STATES
 local isRunning = true
+local autoTypeEnabled = true -- NEW: State for Auto-Typer
 
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
@@ -29,11 +31,35 @@ local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 8)
 toggleCorner.Parent = toggleBtn
 
--- MAIN FRAME (FIXED: Perfectly centered and fixed size)
+-- NEW: Make the Floating Toggle Button Draggable
+local dragging, dragInput, dragStart, startPos
+toggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = toggleBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+toggleBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- MAIN FRAME (Expanded height slightly to fit new button)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 450, 0, 380) -- Fixed size: 450x380 pixels
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Sets origin to the exact center of the frame
-mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Places that center at the exact center of the screen
+mainFrame.Size = UDim2.new(0, 450, 0, 420) -- Increased from 380 to 420
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5) 
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -57,9 +83,9 @@ titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
 titleLabel.Parent = mainFrame
 
--- BUTTON CONTAINER
+-- BUTTON CONTAINER (Increased size to fit 5 buttons)
 local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, -20, 0, 148)
+buttonContainer.Size = UDim2.new(1, -20, 0, 186) -- Increased from 148
 buttonContainer.Position = UDim2.new(0, 10, 0, 30)
 buttonContainer.BackgroundTransparency = 1
 buttonContainer.Parent = mainFrame
@@ -85,15 +111,17 @@ local function createButton(text, bgColor)
     return btn
 end
 
+-- BUTTONS
+local autoTypeButton = createButton("🟢 AUTO TYPE: ON", Color3.fromRGB(40, 150, 40)) -- NEW TOGGLE BUTTON
 local modeButton = createButton("📏 LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
 local suffixButton = createButton("🎯 TARGET SUFFIX: OFF", Color3.fromRGB(150, 50, 50))
 local resetButton = createButton("🔄 RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
 local exitButton = createButton("❌ EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
--- SCROLL FRAME
+-- SCROLL FRAME (Adjusted positions to account for bigger button container)
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -20, 1, -185)
-scrollFrame.Position = UDim2.new(0, 10, 0, 180)
+scrollFrame.Size = UDim2.new(1, -20, 1, -225) -- Adjusted size
+scrollFrame.Position = UDim2.new(0, 10, 0, 220) -- Moved down
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
@@ -122,7 +150,22 @@ end
 
 logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
 
--- STATES & TOGGLES
+-- STATES & TOGGLES LOGIC
+
+-- NEW: Auto Type Button Logic
+autoTypeButton.MouseButton1Click:Connect(function()
+    autoTypeEnabled = not autoTypeEnabled
+    if autoTypeEnabled then
+        autoTypeButton.Text = "🟢 AUTO TYPE: ON"
+        autoTypeButton.BackgroundColor3 = Color3.fromRGB(40, 150, 40)
+        logMessage("Bot is now UNPAUSED (Auto-Type ON)", Color3.fromRGB(0, 255, 0))
+    else
+        autoTypeButton.Text = "🔴 AUTO TYPE: OFF"
+        autoTypeButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+        logMessage("Bot is now PAUSED (Auto-Type OFF)", Color3.fromRGB(255, 100, 100))
+    end
+end)
+
 local lengthMode = 1 
 local lengthLabels = {
     "📏 LENGTH: SHORT (9 or less)",
@@ -238,7 +281,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
         end
     end
     
-    if not isRunning then return end
+    if not isRunning or not autoTypeEnabled then return end -- Check before typing
     
     local typoRate = 25
     if #fullWord >= 15 then
@@ -269,7 +312,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
     local currentStreak = 0
     
     for i = 1, #suffix do
-        if not isRunning then break end
+        if not isRunning or not autoTypeEnabled then break end -- Break if toggled off
         
         local correctChar = string.sub(suffix, i, i)
         local keycode = Enum.KeyCode[correctChar]
@@ -277,7 +320,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
         if i == typoIndex then
             local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             for t = 1, typosToMake do
-                if not isRunning then break end
+                if not isRunning or not autoTypeEnabled then break end
                 local wrongChar = correctChar
                 while wrongChar == correctChar do
                     local rIndex = math.random(1, 26)
@@ -296,7 +339,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
             task.wait(math.random(250, 500) / 1000)
             
             for t = 1, typosToMake do
-                if not isRunning then break end
+                if not isRunning or not autoTypeEnabled then break end
                 VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
                 task.wait(math.random(20, 40) / 1000)
                 VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
@@ -307,7 +350,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
             currentStreak = 0 
         end
         
-        if keycode and isRunning then
+        if keycode and isRunning and autoTypeEnabled then
             VIM:SendKeyEvent(true, keycode, false, game)
             task.wait(math.random(20, 50) / 1000) 
             VIM:SendKeyEvent(false, keycode, false, game)
@@ -338,7 +381,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
         end
     end
     
-    if not isRunning then return end
+    if not isRunning or not autoTypeEnabled then return end
     
     if willAddEndTypo then
         task.wait(math.random(50, 150) / 1000)
@@ -364,7 +407,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
         task.wait(math.random(200, 500) / 1000)
     end
     
-    if not isRunning then return end
+    if not isRunning or not autoTypeEnabled then return end
     
     if #fullWord >= 15 then
         logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
@@ -376,7 +419,7 @@ local function typeRemainingLetters(fullWord, prefixLength)
         task.wait(math.random(400, 800) / 1000)
     end
     
-    if isRunning then
+    if isRunning and autoTypeEnabled then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
         task.wait(0.05)
         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
@@ -422,12 +465,13 @@ task.spawn(function()
         end
         
         if isMyTurn then
-            if not hasPlayedThisTurn and currentText ~= "" then
+            -- NEW: Checked if autoTypeEnabled is turned ON
+            if autoTypeEnabled and not hasPlayedThisTurn and currentText ~= "" then
                 hasPlayedThisTurn = true 
                 
                 task.spawn(function()
                     task.wait(0.3) 
-                    if not isRunning then return end
+                    if not isRunning or not autoTypeEnabled then return end
                     
                     local settledPrefix = readInputBox()
                     
