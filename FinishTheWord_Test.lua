@@ -35,6 +35,7 @@ mainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -147,21 +148,23 @@ local navLayout = Instance.new("UIListLayout")
 navLayout.Parent = navBar
 navLayout.SortOrder = Enum.SortOrder.LayoutOrder
 navLayout.FillDirection = Enum.FillDirection.Horizontal
-navLayout.Padding = UDim.new(0, 4)
+navLayout.Padding = UDim.new(0, 6)
+navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
 local function createNavTab(text)
     local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(0, 90, 0, 28)
+    tab.Size = UDim2.new(0, 110, 0, 28)
     tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tab.TextColor3 = Color3.fromRGB(150, 150, 150)
     tab.Font = Enum.Font.GothamBold
     tab.TextSize = 10
     tab.Text = text
+    tab.AutoButtonColor = false
     tab.Parent = navBar
     
     local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 4)
+    tabCorner.CornerRadius = UDim.new(0, 5)
     tabCorner.Parent = tab
     return tab
 end
@@ -173,16 +176,18 @@ local consoleTab = createNavTab("📋 CONSOLE")
 local settingsPanel = Instance.new("Frame")
 settingsPanel.Size = UDim2.new(1, 0, 1, -82)
 settingsPanel.Position = UDim2.new(0, 0, 0, 67)
-settingsPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+settingsPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 settingsPanel.BorderSizePixel = 0
+settingsPanel.ClipsDescendants = true
 settingsPanel.Visible = false
 settingsPanel.Parent = mainFrame
 
 local consolePanel = Instance.new("Frame")
 consolePanel.Size = UDim2.new(1, 0, 1, -82)
 consolePanel.Position = UDim2.new(0, 0, 0, 67)
-consolePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+consolePanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 consolePanel.BorderSizePixel = 0
+consolePanel.ClipsDescendants = true
 consolePanel.Visible = true
 consolePanel.Parent = mainFrame
 
@@ -223,28 +228,29 @@ settingsScroll.BackgroundTransparency = 1
 settingsScroll.BorderSizePixel = 0
 settingsScroll.ScrollBarThickness = 4
 settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+settingsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 settingsScroll.Parent = settingsPanel
 
 local settingsPadding = Instance.new("UIPadding")
-settingsPadding.PaddingLeft = UDim.new(0, 15)
-settingsPadding.PaddingRight = UDim.new(0, 15)
-settingsPadding.PaddingTop = UDim.new(0, 15)
+settingsPadding.PaddingLeft = UDim.new(0, 12)
+settingsPadding.PaddingRight = UDim.new(0, 12)
+settingsPadding.PaddingTop = UDim.new(0, 12)
 settingsPadding.Parent = settingsScroll
 
 local settingsLayout = Instance.new("UIListLayout")
 settingsLayout.Parent = settingsScroll
 settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-settingsLayout.Padding = UDim.new(0, 12)
+settingsLayout.Padding = UDim.new(0, 10)
 
 -- Auto Answer Toggle
 local autoAnswerLabel = Instance.new("TextLabel")
-autoAnswerLabel.Size = UDim2.new(1, 0, 0, 25)
-autoAnswerLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+autoAnswerLabel.Size = UDim2.new(1, 0, 0, 22)
+autoAnswerLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 autoAnswerLabel.BorderSizePixel = 0
 autoAnswerLabel.Text = "🤖 AUTO ANSWER"
 autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 autoAnswerLabel.Font = Enum.Font.GothamBold
-autoAnswerLabel.TextSize = 12
+autoAnswerLabel.TextSize = 11
 autoAnswerLabel.TextXAlignment = Enum.TextXAlignment.Left
 autoAnswerLabel.Parent = settingsScroll
 
@@ -253,7 +259,7 @@ labelPadding.PaddingLeft = UDim.new(0, 10)
 labelPadding.Parent = autoAnswerLabel
 
 local autoAnswerToggle = Instance.new("TextButton")
-autoAnswerToggle.Size = UDim2.new(1, 0, 0, 32)
+autoAnswerToggle.Size = UDim2.new(1, 0, 0, 34)
 autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 autoAnswerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoAnswerToggle.Font = Enum.Font.GothamBold
@@ -281,12 +287,12 @@ autoAnswerToggle.MouseButton1Click:Connect(function()
 end)
 
 local usedWordsLabel = Instance.new("TextLabel")
-usedWordsLabel.Size = UDim2.new(1, 0, 0, 20)
+usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
 usedWordsLabel.BackgroundTransparency = 1
 usedWordsLabel.Text = "📊 Words Used (Auto & Manual): 0"
-usedWordsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+usedWordsLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
 usedWordsLabel.Font = Enum.Font.Code
-usedWordsLabel.TextSize = 11
+usedWordsLabel.TextSize = 10
 usedWordsLabel.TextXAlignment = Enum.TextXAlignment.Left
 usedWordsLabel.Parent = settingsScroll
 
@@ -309,7 +315,7 @@ end)
 local controlsSection = Instance.new("Frame")
 controlsSection.Size = UDim2.new(1, 0, 0, 0)
 controlsSection.AutomaticSize = Enum.AutomaticSize.Y
-controlsSection.BackgroundTransparency = 1
+controlsSection.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 controlsSection.BorderSizePixel = 0
 controlsSection.Parent = settingsScroll
 
@@ -323,20 +329,20 @@ buttonContainer.Parent = controlsSection
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.Parent = buttonContainer
 buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-buttonLayout.Padding = UDim.new(0, 4)
+buttonLayout.Padding = UDim.new(0, 5)
 
 local function createButton(text, bgColor)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 24)
+    btn.Size = UDim2.new(1, 0, 0, 26)
     btn.BackgroundColor3 = bgColor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
+    btn.TextSize = 10
     btn.Text = text
     btn.Parent = buttonContainer
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 5)
     corner.Parent = btn
     return btn
 end
