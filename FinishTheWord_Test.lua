@@ -30,7 +30,7 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.6, 0, 0.5, 0)
+mainFrame.Size = UDim2.new(0.55, 0, 0.55, 0)
 mainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
@@ -168,7 +168,6 @@ end
 
 local settingsTab = createNavTab("⚙ SETTINGS")
 local consoleTab = createNavTab("📋 CONSOLE")
-local updateTab = createNavTab("📝 UPDATE LOG")
 
 -- CONTENT PANELS
 local settingsPanel = Instance.new("Frame")
@@ -187,14 +186,6 @@ consolePanel.BorderSizePixel = 0
 consolePanel.Visible = true
 consolePanel.Parent = mainFrame
 
-local updatePanel = Instance.new("Frame")
-updatePanel.Size = UDim2.new(1, 0, 1, -82)
-updatePanel.Position = UDim2.new(0, 0, 0, 67)
-updatePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-updatePanel.BorderSizePixel = 0
-updatePanel.Visible = false
-updatePanel.Parent = mainFrame
-
 -- TAB SWITCHING
 local currentTab = "console"
 
@@ -202,7 +193,6 @@ local function switchTab(tabName)
     currentTab = tabName
     settingsPanel.Visible = (tabName == "settings")
     consolePanel.Visible = (tabName == "console")
-    updatePanel.Visible = (tabName == "update")
     
     -- Update tab colors
     if tabName == "settings" then
@@ -210,22 +200,11 @@ local function switchTab(tabName)
         settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
         consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-        updateTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        updateTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-    elseif tabName == "console" then
+    else
         settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
         consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
         consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-        updateTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        updateTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-    else
-        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-        updateTab.BackgroundColor3 = Color3.fromRGB(180, 120, 0)
-        updateTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 end
 
@@ -235,10 +214,6 @@ end)
 
 consoleTab.MouseButton1Click:Connect(function()
     switchTab("console")
-end)
-
-updateTab.MouseButton1Click:Connect(function()
-    switchTab("update")
 end)
 
 -- SETTINGS PANEL CONTENT
@@ -323,102 +298,6 @@ task.spawn(function()
         usedWordsLabel.Text = "📊 Words Used (Auto & Manual): " .. count
         task.wait(1)
     end
-end)
-
--- UPDATE LOG PANEL
-local updatePadding = Instance.new("UIPadding")
-updatePadding.PaddingLeft = UDim.new(0, 15)
-updatePadding.PaddingRight = UDim.new(0, 15)
-updatePadding.PaddingTop = UDim.new(0, 15)
-updatePadding.Parent = updatePanel
-
-local updateScroll = Instance.new("ScrollingFrame")
-updateScroll.Size = UDim2.new(1, 0, 1, 0)
-updateScroll.BackgroundTransparency = 1
-updateScroll.BorderSizePixel = 0
-updateScroll.ScrollBarThickness = 4
-updateScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-updateScroll.Parent = updatePanel
-
-local updateLayout = Instance.new("UIListLayout")
-updateLayout.Parent = updateScroll
-updateLayout.SortOrder = Enum.SortOrder.LayoutOrder
-updateLayout.Padding = UDim.new(0, 6)
-
-local function addUpdateLog(title, description, version)
-    local updateItem = Instance.new("Frame")
-    updateItem.Size = UDim2.new(1, 0, 0, 0)
-    updateItem.AutomaticSize = Enum.AutomaticSize.Y
-    updateItem.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    updateItem.BorderSizePixel = 0
-    updateItem.Parent = updateScroll
-    
-    local itemCorner = Instance.new("UICorner")
-    itemCorner.CornerRadius = UDim.new(0, 4)
-    itemCorner.Parent = updateItem
-    
-    local itemPadding = Instance.new("UIPadding")
-    itemPadding.PaddingLeft = UDim.new(0, 10)
-    itemPadding.PaddingRight = UDim.new(0, 10)
-    itemPadding.PaddingTop = UDim.new(0, 8)
-    itemPadding.PaddingBottom = UDim.new(0, 8)
-    itemPadding.Parent = updateItem
-    
-    local itemLayout = Instance.new("UIListLayout")
-    itemLayout.Parent = updateItem
-    itemLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    itemLayout.Padding = UDim.new(0, 4)
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, 0, 0, 0)
-    titleLabel.AutomaticSize = Enum.AutomaticSize.Y
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 11
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.TextWrapped = true
-    titleLabel.Parent = updateItem
-    
-    local descLabel = Instance.new("TextLabel")
-    descLabel.Size = UDim2.new(1, 0, 0, 0)
-    descLabel.AutomaticSize = Enum.AutomaticSize.Y
-    descLabel.BackgroundTransparency = 1
-    descLabel.Text = description
-    descLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    descLabel.Font = Enum.Font.Code
-    descLabel.TextSize = 10
-    descLabel.TextXAlignment = Enum.TextXAlignment.Left
-    descLabel.TextWrapped = true
-    descLabel.Parent = updateItem
-    
-    local versionLabel = Instance.new("TextLabel")
-    versionLabel.Size = UDim2.new(1, 0, 0, 15)
-    versionLabel.BackgroundTransparency = 1
-    versionLabel.Text = "v" .. version
-    versionLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
-    versionLabel.Font = Enum.Font.Code
-    versionLabel.TextSize = 9
-    versionLabel.TextXAlignment = Enum.TextXAlignment.Right
-    versionLabel.Parent = updateItem
-end
-
--- Add update logs
-addUpdateLog("✓ Main window positioning fixed", "Centered at 0.2, 0.2 with proper constraints", "30")
-addUpdateLog("✓ Visual separation added", "Header, controls, and console sections properly styled", "30")
-addUpdateLog("✓ Compact button layout", "Reduced button height and spacing for efficiency", "30")
-addUpdateLog("✓ Console with timestamps", "Terminal-style messages with status indicators", "30")
-addUpdateLog("✓ Status indicator light", "Green (running) / Red (stopped) indicator in header", "30")
-addUpdateLog("✓ Toggle button redesigned", "Changed from TOGGLE UI to ◉ CONSOLE / ○ HIDDEN", "30")
-addUpdateLog("✓ Window dragging enabled", "Click and drag header to move panel anywhere", "30")
-addUpdateLog("✓ Navigation bar added", "Switch between Settings, Console, and Update Log tabs", "30")
-
-updateScroll.CanvasSize = UDim2.new(0, 0, 0, updateLayout.AbsoluteContentSize.Y)
-
--- Update canvas size when layout changes
-updateLayout.Changed:Connect(function()
-    updateScroll.CanvasSize = UDim2.new(0, 0, 0, updateLayout.AbsoluteContentSize.Y)
 end)
 
 -- Update settings canvas size when layout changes
