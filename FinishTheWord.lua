@@ -52,13 +52,42 @@ headerFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 headerFrame.BorderSizePixel = 0
 headerFrame.Parent = mainFrame
 
+local headerLayout = Instance.new("UIListLayout")
+headerLayout.Parent = headerFrame
+headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+headerLayout.FillDirection = Enum.FillDirection.Horizontal
+headerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+headerLayout.Padding = UDim.new(0, 8)
+
+-- STATUS INDICATOR
+local statusIndicator = Instance.new("Frame")
+statusIndicator.Size = UDim2.new(0, 12, 0, 12)
+statusIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+statusIndicator.BorderSizePixel = 0
+statusIndicator.Parent = headerFrame
+
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 6)
+statusCorner.Parent = statusIndicator
+
+-- STATUS INDICATOR UPDATE FUNCTION
+local function updateStatusIndicator()
+    if isRunning then
+        statusIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+    else
+        statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end
+
+-- TITLE LABEL
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.Size = UDim2.new(1, -20, 1, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = " FINISH THE WORD (V30)"
 titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = headerFrame
 
 -- HEADER DIVIDER
@@ -237,6 +266,7 @@ local function logMessage(text, color)
 end
 
 logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
+updateStatusIndicator()
 
 -- STATES & TOGGLES
 local lengthMode = 1 
@@ -308,7 +338,10 @@ end)
 -- EXIT LOGIC
 exitButton.MouseButton1Click:Connect(function()
     isRunning = false
+    updateStatusIndicator()
+    logMessage("Script stopped by user.", Color3.fromRGB(255, 100, 100))
     if inGameConnection then inGameConnection:Disconnect() end
+    task.wait(1)
     if screenGui then screenGui:Destroy() end
 end)
 
