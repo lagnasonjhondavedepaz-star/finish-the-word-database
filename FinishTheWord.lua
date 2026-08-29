@@ -30,8 +30,8 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 800, 0, 600)
-mainFrame.Position = UDim2.new(0.5, -400, 0.5, -300)
+mainFrame.Size = UDim2.new(0.6, 0, 0.5, 0)
+mainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
