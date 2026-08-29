@@ -139,24 +139,101 @@ consoleDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
 consoleDivider.BorderSizePixel = 0
 consoleDivider.Parent = mainFrame
 
+local function getStatusIndicator(color)
+    if color == Color3.fromRGB(0, 255, 0) then
+        return "✓", Color3.fromRGB(0, 255, 100)
+    elseif color == Color3.fromRGB(255, 50, 50) or color == Color3.fromRGB(255, 100, 100) then
+        return "✗", Color3.fromRGB(255, 100, 100)
+    elseif color == Color3.fromRGB(255, 255, 0) then
+        return "!", Color3.fromRGB(255, 200, 0)
+    elseif color == Color3.fromRGB(255, 150, 0) then
+        return "⚠", Color3.fromRGB(255, 150, 100)
+    elseif color == Color3.fromRGB(0, 255, 255) or color == Color3.fromRGB(0, 255, 150) then
+        return "►", Color3.fromRGB(0, 200, 255)
+    else
+        return "•", color
+    end
+end
+
+local function getTimestamp()
+    local now = os.date("*t")
+    return string.format("[%02d:%02d:%02d]", now.hour, now.min, now.sec)
+end
+
 local function logMessage(text, color)
     if not isRunning then return end
+    
+    local msgContainer = Instance.new("Frame")
+    msgContainer.Size = UDim2.new(1, 0, 0, 0)
+    msgContainer.AutomaticSize = Enum.AutomaticSize.Y
+    msgContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    msgContainer.BorderSizePixel = 0
+    msgContainer.Parent = scrollFrame
+    
+    local msgContainerCorner = Instance.new("UICorner")
+    msgContainerCorner.CornerRadius = UDim.new(0, 4)
+    msgContainerCorner.Parent = msgContainer
+    
+    local msgPadding = Instance.new("UIPadding")
+    msgPadding.PaddingLeft = UDim.new(0, 8)
+    msgPadding.PaddingRight = UDim.new(0, 8)
+    msgPadding.PaddingTop = UDim.new(0, 6)
+    msgPadding.PaddingBottom = UDim.new(0, 6)
+    msgPadding.Parent = msgContainer
+    
+    local msgLayout = Instance.new("UIListLayout")
+    msgLayout.Parent = msgContainer
+    msgLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    msgLayout.FillDirection = Enum.FillDirection.Horizontal
+    msgLayout.Padding = UDim.new(0, 6)
+    msgLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    
+    -- STATUS INDICATOR
+    local statusIndicator = Instance.new("TextLabel")
+    statusIndicator.Size = UDim2.new(0, 20, 0, 20)
+    statusIndicator.BackgroundTransparency = 1
+    statusIndicator.Text = getStatusIndicator(color)
+    statusIndicator.TextColor3 = getStatusIndicator(color) and color or Color3.fromRGB(100, 100, 100)
+    statusIndicator.TextSize = 16
+    statusIndicator.Font = Enum.Font.GothamBold
+    statusIndicator.Parent = msgContainer
+    
+    -- MESSAGE CONTENT FRAME
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Size = UDim2.new(1, -26, 0, 0)
+    contentFrame.AutomaticSize = Enum.AutomaticSize.Y
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = msgContainer
+    
+    local contentLayout = Instance.new("UIListLayout")
+    contentLayout.Parent = contentFrame
+    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    contentLayout.Padding = UDim.new(0, 2)
+    
+    -- TIMESTAMP
+    local timestamp = Instance.new("TextLabel")
+    timestamp.Size = UDim2.new(1, 0, 0, 0)
+    timestamp.AutomaticSize = Enum.AutomaticSize.Y
+    timestamp.BackgroundTransparency = 1
+    timestamp.Text = getTimestamp()
+    timestamp.TextColor3 = Color3.fromRGB(100, 100, 100)
+    timestamp.TextSize = 10
+    timestamp.Font = Enum.Font.Code
+    timestamp.TextXAlignment = Enum.TextXAlignment.Left
+    timestamp.Parent = contentFrame
+    
+    -- MESSAGE TEXT
     local msg = Instance.new("TextLabel")
     msg.Size = UDim2.new(1, 0, 0, 0)
     msg.AutomaticSize = Enum.AutomaticSize.Y
     msg.TextWrapped = true
-    msg.BackgroundTransparency = 0.8
-    msg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    msg.BackgroundTransparency = 1
     msg.TextColor3 = color or Color3.fromRGB(0, 255, 150)
-    msg.TextSize = 13
+    msg.TextSize = 12
     msg.Font = Enum.Font.Code
     msg.TextXAlignment = Enum.TextXAlignment.Left
-    msg.Text = " " .. text
-    msg.Parent = scrollFrame
-    
-    local msgCorner = Instance.new("UICorner")
-    msgCorner.CornerRadius = UDim.new(0, 4)
-    msgCorner.Parent = msg
+    msg.Text = text
+    msg.Parent = contentFrame
 end
 
 logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
