@@ -306,6 +306,118 @@ task.spawn(function()
     end
 end)
 
+-- SUFFIX SETTINGS
+local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY"}
+local selectedSuffixes = {}
+for _, suffix in ipairs(suffixOptions) do
+    selectedSuffixes[suffix] = true
+end
+local suffixLengthStrict = false
+
+local suffixLabel = Instance.new("TextLabel")
+suffixLabel.Size = UDim2.new(1, 0, 0, 22)
+suffixLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+suffixLabel.BorderSizePixel = 0
+suffixLabel.Text = "🎯 TARGET SUFFIX"
+suffixLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+suffixLabel.Font = Enum.Font.GothamBold
+suffixLabel.TextSize = 11
+suffixLabel.TextXAlignment = Enum.TextXAlignment.Left
+suffixLabel.Parent = settingsScroll
+
+local suffixPadding = Instance.new("UIPadding")
+suffixPadding.PaddingLeft = UDim.new(0, 10)
+suffixPadding.Parent = suffixLabel
+
+local suffixFrame = Instance.new("Frame")
+suffixFrame.Size = UDim2.new(1, 0, 0, 0)
+suffixFrame.AutomaticSize = Enum.AutomaticSize.Y
+suffixFrame.BackgroundTransparency = 1
+suffixFrame.Parent = settingsScroll
+
+local suffixGrid = Instance.new("UIGridLayout")
+suffixGrid.Parent = suffixFrame
+suffixGrid.SortOrder = Enum.SortOrder.LayoutOrder
+suffixGrid.CellSize = UDim2.new(0, 60, 0, 24)
+suffixGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+suffixGrid.FillDirectionMaxCells = 3
+
+local suffixButtons = {}
+
+local function refreshSuffixButtons()
+    for _, btn in ipairs(suffixButtons) do
+        local suffixText = btn.Text:match("%S+%s*$")
+        local suffixName = suffixText and suffixText:gsub("%s*$", "") or ""
+        if selectedSuffixes[suffixName] then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+            btn.Text = "☑ " .. suffixName
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.Text = "☐ " .. suffixName
+        end
+    end
+end
+
+local function createSuffixButton(suffixName)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 60, 0, 24)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = "☑ " .. suffixName
+    btn.AutoButtonColor = false
+    btn.Parent = suffixFrame
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        selectedSuffixes[suffixName] = not selectedSuffixes[suffixName]
+        refreshSuffixButtons()
+    end)
+
+    table.insert(suffixButtons, btn)
+    return btn
+end
+
+for _, suffixName in ipairs(suffixOptions) do
+    createSuffixButton(suffixName)
+end
+
+local suffixLengthButton = Instance.new("TextButton")
+suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
+suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+suffixLengthButton.Font = Enum.Font.GothamBold
+suffixLengthButton.TextSize = 10
+suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+suffixLengthButton.AutoButtonColor = false
+suffixLengthButton.Parent = settingsScroll
+
+local suffixLengthCorner = Instance.new("UICorner")
+suffixLengthCorner.CornerRadius = UDim.new(0, 5)
+suffixLengthCorner.Parent = suffixLengthButton
+
+local function refreshSuffixLengthButton()
+    if suffixLengthStrict then
+        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        suffixLengthButton.Text = "LENGTH: IGNORE SUFFIX IF NOT MATCHED"
+    else
+        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+    end
+end
+
+suffixLengthButton.MouseButton1Click:Connect(function()
+    suffixLengthStrict = not suffixLengthStrict
+    refreshSuffixLengthButton()
+end)
+
+refreshSuffixButtons()
+refreshSuffixLengthButton()
+
 -- Update settings canvas size when layout changes
 settingsLayout.Changed:Connect(function()
     settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
@@ -348,7 +460,6 @@ local function createButton(text, bgColor)
 end
 
 local modeButton = createButton(" LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
-local suffixButton = createButton(" TARGET SUFFIX: OFF", Color3.fromRGB(150, 50, 50))
 local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
@@ -485,21 +596,26 @@ modeButton.MouseButton1Click:Connect(function()
     logMessage("Switched to " .. lengthLabels[lengthMode], Color3.fromRGB(255, 255, 0))
 end)
 
-local suffixModeEnabled = false
-local defaultSuffixes = {"PT", "UM", "LY", "KY", "X", "Y"}
+local suffixModeEnabled = true
 
-suffixButton.MouseButton1Click:Connect(function()
-    suffixModeEnabled = not suffixModeEnabled
-    if suffixModeEnabled then
-        suffixButton.Text = " TARGET SUFFIX: ON (PT, UM, LY...)"
-        suffixButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-        logMessage("Suffix Mode ENABLED", Color3.fromRGB(0, 255, 0))
-    else
-        suffixButton.Text = " TARGET SUFFIX: OFF"
-        suffixButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-        logMessage("Suffix Mode DISABLED", Color3.fromRGB(255, 100, 100))
+local function getSelectedSuffixes()
+    local suffixList = {}
+    for _, suffixName in ipairs(suffixOptions) do
+        if selectedSuffixes[suffixName] then
+            table.insert(suffixList, suffixName)
+        end
     end
-end)
+    return suffixList
+end
+
+local function matchesLengthMode(word)
+    if lengthMode == 1 then
+        return #word <= 9
+    elseif lengthMode == 2 then
+        return #word >= 10
+    end
+    return true
+end
 
 -- WORD DB FROM GITHUB
 local wordsTable = {}
@@ -807,32 +923,37 @@ task.spawn(function()
                         local finalPool = {}
                         local foundSuffix = false
                         
+                        local activeSuffixes = getSelectedSuffixes()
+                        suffixModeEnabled = (#activeSuffixes > 0)
+                        
                         if suffixModeEnabled then
-                            for _, targetSuffix in ipairs(defaultSuffixes) do
+                            for _, targetSuffix in ipairs(activeSuffixes) do
                                 local exactSuffixMatches = {}
                                 local fallbackSuffixMatches = {}
                                 
                                 for _, word in ipairs(fallbackMatches) do
                                     if string.sub(word, -#targetSuffix) == targetSuffix then
                                         table.insert(fallbackSuffixMatches, word)
-                                    end
-                                end
-                                for _, word in ipairs(exactLengthMatches) do
-                                    if string.sub(word, -#targetSuffix) == targetSuffix then
-                                        table.insert(exactSuffixMatches, word)
+                                        if matchesLengthMode(word) then
+                                            table.insert(exactSuffixMatches, word)
+                                        end
                                     end
                                 end
                                 
-                                if #exactSuffixMatches > 0 then
-                                    finalPool = exactSuffixMatches
-                                    foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."]", Color3.fromRGB(0, 255, 0))
-                                    break
-                                elseif #fallbackSuffixMatches > 0 then
-                                    finalPool = fallbackSuffixMatches
-                                    foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."] (Ignored Length)", Color3.fromRGB(200, 200, 0))
-                                    break
+                                if suffixLengthStrict then
+                                    if #exactSuffixMatches > 0 then
+                                        finalPool = exactSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
+                                        break
+                                    end
+                                else
+                                    if #fallbackSuffixMatches > 0 then
+                                        finalPool = fallbackSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
+                                        break
+                                    end
                                 end
                             end
                         end
