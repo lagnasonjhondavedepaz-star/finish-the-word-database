@@ -307,7 +307,7 @@ task.spawn(function()
 end)
 
 -- SUFFIX SETTINGS
-local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY"}
+local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY", "PT"}
 local selectedSuffixes = {}
 for _, suffix in ipairs(suffixOptions) do
     selectedSuffixes[suffix] = true
