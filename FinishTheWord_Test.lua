@@ -386,6 +386,20 @@ for _, suffixName in ipairs(suffixOptions) do
     createSuffixButton(suffixName)
 end
 
+local suffixOrderButton = Instance.new("TextButton")
+suffixOrderButton.Size = UDim2.new(1, 0, 0, 28)
+suffixOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+suffixOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+suffixOrderButton.Font = Enum.Font.GothamBold
+suffixOrderButton.TextSize = 10
+suffixOrderButton.Text = "SUFFIX ORDER: LONGEST TO SHORTEST"
+suffixOrderButton.AutoButtonColor = false
+suffixOrderButton.Parent = settingsScroll
+
+local suffixOrderCorner = Instance.new("UICorner")
+suffixOrderCorner.CornerRadius = UDim.new(0, 5)
+suffixOrderCorner.Parent = suffixOrderButton
+
 local suffixLengthButton = Instance.new("TextButton")
 suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
 suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -400,6 +414,18 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
+local suffixOrder = true
+
+local function refreshSuffixOrderButton()
+    if suffixOrder then
+        suffixOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        suffixOrderButton.Text = "SUFFIX ORDER: LONGEST TO SHORTEST"
+    else
+        suffixOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        suffixOrderButton.Text = "SUFFIX ORDER: SHORTEST TO LONGEST"
+    end
+end
+
 local function refreshSuffixLengthButton()
     if suffixLengthStrict then
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
@@ -410,12 +436,18 @@ local function refreshSuffixLengthButton()
     end
 end
 
+suffixOrderButton.MouseButton1Click:Connect(function()
+    suffixOrder = not suffixOrder
+    refreshSuffixOrderButton()
+end)
+
 suffixLengthButton.MouseButton1Click:Connect(function()
     suffixLengthStrict = not suffixLengthStrict
     refreshSuffixLengthButton()
 end)
 
 refreshSuffixButtons()
+refreshSuffixOrderButton()
 refreshSuffixLengthButton()
 
 -- Update settings canvas size when layout changes
@@ -605,6 +637,17 @@ local function getSelectedSuffixes()
             table.insert(suffixList, suffixName)
         end
     end
+
+    if suffixOrder then
+        table.sort(suffixList, function(a, b)
+            return #a > #b
+        end)
+    else
+        table.sort(suffixList, function(a, b)
+            return #a < #b
+        end)
+    end
+
     return suffixList
 end
 
