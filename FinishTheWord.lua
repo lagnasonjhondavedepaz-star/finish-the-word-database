@@ -26,12 +26,14 @@ toggleBtn.Text = "👁️ TOGGLE UI"
 toggleBtn.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 8) -- Fixed the sunglasses emoji error here
+toggleCorner.CornerRadius = UDim.new(0, 8)
 toggleCorner.Parent = toggleBtn
 
+-- MAIN FRAME (FIXED: Perfectly centered and fixed size)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.65, 0, 0.55, 0)
-mainFrame.Position = UDim2.new(0.35, -10, 0.15, 0)
+mainFrame.Size = UDim2.new(0, 450, 0, 380) -- Fixed size: 450x380 pixels
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Sets origin to the exact center of the frame
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Places that center at the exact center of the screen
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -88,6 +90,7 @@ local suffixButton = createButton("🎯 TARGET SUFFIX: OFF", Color3.fromRGB(150,
 local resetButton = createButton("🔄 RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
 local exitButton = createButton("❌ EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
+-- SCROLL FRAME
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Size = UDim2.new(1, -20, 1, -185)
 scrollFrame.Position = UDim2.new(0, 10, 0, 180)
