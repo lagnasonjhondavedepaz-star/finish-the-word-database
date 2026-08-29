@@ -400,13 +400,27 @@ local suffixOrderCorner = Instance.new("UICorner")
 suffixOrderCorner.CornerRadius = UDim.new(0, 5)
 suffixOrderCorner.Parent = suffixOrderButton
 
+local lengthOrderButton = Instance.new("TextButton")
+lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
+lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+lengthOrderButton.Font = Enum.Font.GothamBold
+lengthOrderButton.TextSize = 10
+lengthOrderButton.Text = "LENGTH ORDER: LONGEST TO FEWEST"
+lengthOrderButton.AutoButtonColor = false
+lengthOrderButton.Parent = settingsScroll
+
+local lengthOrderCorner = Instance.new("UICorner")
+lengthOrderCorner.CornerRadius = UDim.new(0, 5)
+lengthOrderCorner.Parent = lengthOrderButton
+
 local suffixLengthButton = Instance.new("TextButton")
 suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
 suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 suffixLengthButton.Font = Enum.Font.GothamBold
 suffixLengthButton.TextSize = 10
-suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+suffixLengthButton.Text = "SUFFIX MATCHING: IGNORE LENGTH MODE"
 suffixLengthButton.AutoButtonColor = false
 suffixLengthButton.Parent = settingsScroll
 
@@ -415,6 +429,7 @@ suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
 local suffixOrder = true
+local lengthOrder = true
 
 local function refreshSuffixOrderButton()
     if suffixOrder then
@@ -426,19 +441,34 @@ local function refreshSuffixOrderButton()
     end
 end
 
+local function refreshLengthOrderButton()
+    if lengthOrder then
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        lengthOrderButton.Text = "LENGTH ORDER: LONGEST TO FEWEST"
+    else
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        lengthOrderButton.Text = "LENGTH ORDER: FEWEST TO LONGEST"
+    end
+end
+
 local function refreshSuffixLengthButton()
     if suffixLengthStrict then
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        suffixLengthButton.Text = "LENGTH: IGNORE SUFFIX IF NOT MATCHED"
+        suffixLengthButton.Text = "SUFFIX MATCHING: REQUIRE LENGTH MODE"
     else
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+        suffixLengthButton.Text = "SUFFIX MATCHING: IGNORE LENGTH MODE"
     end
 end
 
 suffixOrderButton.MouseButton1Click:Connect(function()
     suffixOrder = not suffixOrder
     refreshSuffixOrderButton()
+end)
+
+lengthOrderButton.MouseButton1Click:Connect(function()
+    lengthOrder = not lengthOrder
+    refreshLengthOrderButton()
 end)
 
 suffixLengthButton.MouseButton1Click:Connect(function()
@@ -448,6 +478,7 @@ end)
 
 refreshSuffixButtons()
 refreshSuffixOrderButton()
+refreshLengthOrderButton()
 refreshSuffixLengthButton()
 
 -- Update settings canvas size when layout changes
@@ -946,24 +977,7 @@ task.spawn(function()
                     if settledPrefix ~= "" then
                         logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
                         
-                        local exactLengthMatches = {}
-                        local fallbackMatches = {}
-                        
-                        for _, word in ipairs(wordsTable) do
-                            if string.sub(word, 1, #settledPrefix) == settledPrefix and not usedWords[word] then
-                                table.insert(fallbackMatches, word)
-                                
-                                local matchesLength = false
-                                if lengthMode == 1 and #word <= 9 then matchesLength = true end
-                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
-                                
-                                if matchesLength then
-                                    table.insert(exactLengthMatches, word)
-                                end
-                            end
-                        end
-                        
-                        local finalPool = {}
+                        local function sortByLengthOrder(wordList)\n                            table.sort(wordList, function(a, b)\n                                if lengthOrder then\n                                    if lengthMode == 1 then\n                                        return #a > #b\n                                    else\n                                        return #a < #b\n                                    end\n                                else\n                                    if lengthMode == 1 then\n                                        return #a < #b\n                                    else\n                                        return #a > #b\n                                    end\n                                end\n                            end)\n                        end\n                        \n                        local exactLengthMatches = {}\n                        local fallbackMatches = {}\n                        \n                        for _, word in ipairs(wordsTable) do\n                            if string.sub(word, 1, #settledPrefix) == settledPrefix and not usedWords[word] then\n                                table.insert(fallbackMatches, word)\n                                \n                                local matchesLength = false\n                                if lengthMode == 1 and #word <= 9 then matchesLength = true end\n                                if lengthMode == 2 and #word >= 10 then matchesLength = true end\n                                \n                                if matchesLength then\n                                    table.insert(exactLengthMatches, word)\n                                end\n                            end\n                        end\n                        \n                        sortByLengthOrder(exactLengthMatches)\n                        sortByLengthOrder(fallbackMatches)\n                        \n                        local finalPool = {}
                         local foundSuffix = false
                         
                         local activeSuffixes = getSelectedSuffixes()
@@ -982,6 +996,9 @@ task.spawn(function()
                                         end
                                     end
                                 end
+                                
+                                sortByLengthOrder(exactSuffixMatches)
+                                sortByLengthOrder(fallbackSuffixMatches)
                                 
                                 if suffixLengthStrict then
                                     if #exactSuffixMatches > 0 then
