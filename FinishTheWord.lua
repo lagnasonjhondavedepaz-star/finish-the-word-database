@@ -1,0 +1,508 @@
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local coreGui = game:GetService("CoreGui")
+local VIM = game:GetService("VirtualInputManager")
+
+if coreGui:FindFirstChild("DeltaScannerConsole") then
+    coreGui.DeltaScannerConsole:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DeltaScannerConsole"
+screenGui.Parent = coreGui
+
+-- GLOBAL RUN STATE
+local isRunning = true
+
+-- FLOATING TOGGLE BUTTON
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 120, 0, 35)
+toggleBtn.Position = UDim2.new(0.5, -60, 0, 10)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+toggleBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 13
+toggleBtn.Text = "👁️ TOGGLE UI"
+toggleBtn.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 😎
+toggleCorner.Parent = toggleBtn
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0.65, 0, 0.55, 0)
+mainFrame.Position = UDim2.new(0.35, -10, 0.15, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+toggleBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+-- UI TITLE
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 25)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "🤖 FINISH THE WORD (V30)"
+titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.TextSize = 14
+titleLabel.Parent = mainFrame
+
+-- BUTTON CONTAINER
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Size = UDim2.new(1, -20, 0, 148)
+buttonContainer.Position = UDim2.new(0, 10, 0, 30)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.Parent = mainFrame
+
+local buttonLayout = Instance.new("UIListLayout")
+buttonLayout.Parent = buttonContainer
+buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
+buttonLayout.Padding = UDim.new(0, 6)
+
+local function createButton(text, bgColor)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.BackgroundColor3 = bgColor
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 13
+    btn.Text = text
+    btn.Parent = buttonContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    return btn
+end
+
+local modeButton = createButton("📏 LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
+local suffixButton = createButton("🎯 TARGET SUFFIX: OFF", Color3.fromRGB(150, 50, 50))
+local resetButton = createButton("🔄 RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
+local exitButton = createButton("❌ EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
+
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 1, -185)
+scrollFrame.Position = UDim2.new(0, 10, 0, 180)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.CanvasSize = UDim2.new(0, 0, 40, 0)
+scrollFrame.Parent = mainFrame
+
+local uiLayout = Instance.new("UIListLayout")
+uiLayout.Parent = scrollFrame
+uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiLayout.Padding = UDim.new(0, 2)
+
+local function logMessage(text, color)
+    if not isRunning then return end
+    local msg = Instance.new("TextLabel")
+    msg.Size = UDim2.new(1, 0, 0, 0)
+    msg.AutomaticSize = Enum.AutomaticSize.Y
+    msg.TextWrapped = true
+    msg.BackgroundTransparency = 1
+    msg.TextColor3 = color or Color3.fromRGB(0, 255, 150)
+    msg.TextSize = 13
+    msg.Font = Enum.Font.Code
+    msg.TextXAlignment = Enum.TextXAlignment.Left
+    msg.Text = " " .. text
+    msg.Parent = scrollFrame
+end
+
+logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
+
+-- STATES & TOGGLES
+local lengthMode = 1 
+local lengthLabels = {
+    "📏 LENGTH: SHORT (9 or less)",
+    "📏 LENGTH: LONG (10 or more)"
+}
+modeButton.MouseButton1Click:Connect(function()
+    lengthMode = lengthMode == 1 and 2 or 1
+    modeButton.Text = lengthLabels[lengthMode]
+    logMessage("Switched to " .. lengthLabels[lengthMode], Color3.fromRGB(255, 255, 0))
+end)
+
+local suffixModeEnabled = false
+local defaultSuffixes = {"PT", "UM", "LY", "KY", "X", "Y"}
+
+suffixButton.MouseButton1Click:Connect(function()
+    suffixModeEnabled = not suffixModeEnabled
+    if suffixModeEnabled then
+        suffixButton.Text = "🎯 TARGET SUFFIX: ON (PT, UM, LY...)"
+        suffixButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+        logMessage("Suffix Mode ENABLED", Color3.fromRGB(0, 255, 0))
+    else
+        suffixButton.Text = "🎯 TARGET SUFFIX: OFF"
+        suffixButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+        logMessage("Suffix Mode DISABLED", Color3.fromRGB(255, 100, 100))
+    end
+end)
+
+-- WORD DB
+local wordsTable = {}
+local validWordsDict = {} 
+local usedWords = {} 
+local missingPrefixes = {} 
+
+local success, fileData = pcall(function() return readfile("word-notes(1).txt") end)
+if success and fileData then
+    for word in string.gmatch(fileData, "[^\r\n]+") do
+        local cleanWord = word:match("^[%a]+$")
+        if cleanWord then 
+            local upperWord = cleanWord:upper()
+            table.insert(wordsTable, upperWord)
+            validWordsDict[upperWord] = true
+        end
+    end
+    logMessage("Loaded " .. #wordsTable .. " words.", Color3.fromRGB(0, 255, 255))
+else
+    logMessage("ERROR: Missing word-notes(1).txt in workspace!", Color3.fromRGB(255, 50, 50))
+    return
+end
+
+local function clearBlacklist()
+    usedWords = {}
+    missingPrefixes = {}
+    logMessage("--- BLACKLIST CLEARED ---", Color3.fromRGB(255, 255, 0))
+end
+resetButton.MouseButton1Click:Connect(clearBlacklist)
+
+local inGameConnection = localPlayer:GetAttributeChangedSignal("InGame"):Connect(function()
+    if localPlayer:GetAttribute("InGame") ~= 2 then
+        clearBlacklist()
+    end
+end)
+
+-- EXIT LOGIC
+exitButton.MouseButton1Click:Connect(function()
+    isRunning = false
+    if inGameConnection then inGameConnection:Disconnect() end
+    if screenGui then screenGui:Destroy() end
+end)
+
+local function readInputBox()
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    local sg = pGui and pGui:FindFirstChild("ScreenGui")
+    local answerInput = sg and sg:FindFirstChild("TopBar") and sg.TopBar:FindFirstChild("AnswerInput")
+    
+    if not answerInput then return "" end
+
+    local letters = {}
+    for _, obj in ipairs(answerInput:GetDescendants()) do
+        if obj:IsA("TextLabel") and obj.Visible and obj.Text ~= "" then
+            local txt = obj.Text:match("^[%a]+$")
+            if txt then table.insert(letters, {label = obj, text = txt:upper()}) end
+        end
+    end
+    
+    table.sort(letters, function(a, b) return a.label.AbsolutePosition.X < b.label.AbsolutePosition.X end)
+    
+    local fullText = ""
+    for _, item in ipairs(letters) do fullText = fullText .. item.text end
+    return fullText
+end
+
+local function typeRemainingLetters(fullWord, prefixLength)
+    local suffix = string.sub(fullWord, prefixLength + 1)
+    
+    local willStartDelay = false
+    if #fullWord >= 10 then
+        willStartDelay = (math.random(1, 100) <= 75)
+    else
+        willStartDelay = (math.random(1, 100) <= 50)
+    end
+    
+    if willStartDelay then
+        task.wait(2) -- NERFED: 3 seconds to 2 seconds
+    else
+        if prefixLength >= 2 then
+            task.wait(math.random(1500, 3000) / 1000)
+        else
+            task.wait(math.random(500, 1500) / 1000)
+        end
+    end
+    
+    if not isRunning then return end
+    
+    local typoRate = 25
+    if #fullWord >= 15 then
+        typoRate = 45
+    end
+    
+    local willMakeTypo = (math.random(1, 100) <= typoRate)
+    local typoIndex = -1
+    local typosToMake = 1
+    
+    local willAddEndTypo = (math.random(1, 100) <= 10) 
+    
+    if willMakeTypo and #suffix > 2 then
+        typoIndex = math.random(1, #suffix - 1)
+        local severity = math.random(1, 10)
+        if severity <= 5 then
+            typosToMake = 1
+        elseif severity <= 8 then
+            typosToMake = 2
+        else
+            typosToMake = 3
+        end
+    end
+    
+    local doubleCheckCount = 0
+    local maxDoubleChecks = (#fullWord >= 15) and 2 or 1
+    local charsBeforePause = math.random(1, 3) 
+    local currentStreak = 0
+    
+    for i = 1, #suffix do
+        if not isRunning then break end
+        
+        local correctChar = string.sub(suffix, i, i)
+        local keycode = Enum.KeyCode[correctChar]
+        
+        if i == typoIndex then
+            local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            for t = 1, typosToMake do
+                if not isRunning then break end
+                local wrongChar = correctChar
+                while wrongChar == correctChar do
+                    local rIndex = math.random(1, 26)
+                    wrongChar = string.sub(alphabet, rIndex, rIndex)
+                end
+                
+                local wrongKeycode = Enum.KeyCode[wrongChar]
+                if wrongKeycode then
+                    VIM:SendKeyEvent(true, wrongKeycode, false, game)
+                    task.wait(math.random(20, 50) / 1000) 
+                    VIM:SendKeyEvent(false, wrongKeycode, false, game)
+                    task.wait(math.random(60, 150) / 1000)
+                end
+            end
+            
+            task.wait(math.random(250, 500) / 1000)
+            
+            for t = 1, typosToMake do
+                if not isRunning then break end
+                VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                task.wait(math.random(20, 40) / 1000)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                task.wait(math.random(80, 150) / 1000)
+            end
+            
+            task.wait(math.random(150, 250) / 1000)
+            currentStreak = 0 
+        end
+        
+        if keycode and isRunning then
+            VIM:SendKeyEvent(true, keycode, false, game)
+            task.wait(math.random(20, 50) / 1000) 
+            VIM:SendKeyEvent(false, keycode, false, game)
+            
+            currentStreak = currentStreak + 1
+            
+            if currentStreak >= charsBeforePause then
+                if #fullWord >= 15 then
+                    task.wait(math.random(200, 450) / 1000)
+                elseif #fullWord > 8 then
+                    task.wait(math.random(150, 300) / 1000)
+                else
+                    task.wait(math.random(100, 250) / 1000)
+                end
+                currentStreak = 0
+                charsBeforePause = math.random(1, 3)
+            else
+                task.wait(math.random(40, 95) / 1000)
+            end
+            
+            if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
+                doubleCheckCount = doubleCheckCount + 1
+                task.wait(math.random(500, 1000) / 1000) 
+            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
+                doubleCheckCount = doubleCheckCount + 1
+                task.wait(math.random(400, 800) / 1000) 
+            end
+        end
+    end
+    
+    if not isRunning then return end
+    
+    if willAddEndTypo then
+        task.wait(math.random(50, 150) / 1000)
+        local endTypoChars = {"Z", "X"}
+        local chosenEndTypo = endTypoChars[math.random(1, 2)]
+        local endTypoKey = Enum.KeyCode[chosenEndTypo]
+        
+        VIM:SendKeyEvent(true, endTypoKey, false, game)
+        task.wait(math.random(20, 50) / 1000)
+        VIM:SendKeyEvent(false, endTypoKey, false, game)
+        
+        task.wait(math.random(100, 250) / 1000)
+        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait(0.05)
+        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+        
+        task.wait(math.random(500, 1000) / 1000)
+        
+        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+        task.wait(math.random(20, 50) / 1000)
+        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+        
+        task.wait(math.random(200, 500) / 1000)
+    end
+    
+    if not isRunning then return end
+    
+    if #fullWord >= 15 then
+        logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
+        task.wait(3)
+    elseif math.random(1, 100) <= 5 then
+        logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
+        task.wait(4) -- NERFED: 5 seconds to 4 seconds
+    else
+        task.wait(math.random(400, 800) / 1000)
+    end
+    
+    if isRunning then
+        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait(0.05)
+        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+    end
+end
+
+task.spawn(function()
+    local lastSeenText = ""
+    local hasPlayedThisTurn = false
+    local wasMyTurn = false
+    
+    while isRunning and task.wait(0.1) do
+        local currentText = readInputBox()
+        local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
+        
+        if isMyTurn ~= wasMyTurn then
+            if lastSeenText ~= "" and validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
+                usedWords[lastSeenText] = true
+                logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+            end
+            wasMyTurn = isMyTurn
+        end
+        
+        if currentText ~= lastSeenText then
+            local isTyping = false
+            if currentText ~= "" and lastSeenText ~= "" then
+                if #currentText < #lastSeenText and string.sub(lastSeenText, 1, #currentText) == currentText then
+                    isTyping = true
+                elseif #currentText > #lastSeenText and string.sub(currentText, 1, #lastSeenText) == lastSeenText then
+                    isTyping = true
+                end
+            elseif currentText ~= "" and lastSeenText == "" then
+                isTyping = true
+            end
+            
+            if not isTyping and lastSeenText ~= "" then
+                if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
+                    usedWords[lastSeenText] = true
+                    logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+                end
+            end
+            lastSeenText = currentText
+        end
+        
+        if isMyTurn then
+            if not hasPlayedThisTurn and currentText ~= "" then
+                hasPlayedThisTurn = true 
+                
+                task.spawn(function()
+                    task.wait(0.3) 
+                    if not isRunning then return end
+                    
+                    local settledPrefix = readInputBox()
+                    
+                    if settledPrefix ~= "" then
+                        logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
+                        
+                        local exactLengthMatches = {}
+                        local fallbackMatches = {}
+                        
+                        for _, word in ipairs(wordsTable) do
+                            if string.sub(word, 1, #settledPrefix) == settledPrefix and not usedWords[word] then
+                                table.insert(fallbackMatches, word)
+                                
+                                local matchesLength = false
+                                if lengthMode == 1 and #word <= 9 then matchesLength = true end
+                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
+                                
+                                if matchesLength then
+                                    table.insert(exactLengthMatches, word)
+                                end
+                            end
+                        end
+                        
+                        local finalPool = {}
+                        local foundSuffix = false
+                        
+                        if suffixModeEnabled then
+                            for _, targetSuffix in ipairs(defaultSuffixes) do
+                                local exactSuffixMatches = {}
+                                local fallbackSuffixMatches = {}
+                                
+                                for _, word in ipairs(fallbackMatches) do
+                                    if string.sub(word, -#targetSuffix) == targetSuffix then
+                                        table.insert(fallbackSuffixMatches, word)
+                                    end
+                                end
+                                for _, word in ipairs(exactLengthMatches) do
+                                    if string.sub(word, -#targetSuffix) == targetSuffix then
+                                        table.insert(exactSuffixMatches, word)
+                                    end
+                                end
+                                
+                                if #exactSuffixMatches > 0 then
+                                    finalPool = exactSuffixMatches
+                                    foundSuffix = true
+                                    logMessage("Matched suffix ["..targetSuffix.."]", Color3.fromRGB(0, 255, 0))
+                                    break
+                                elseif #fallbackSuffixMatches > 0 then
+                                    finalPool = fallbackSuffixMatches
+                                    foundSuffix = true
+                                    logMessage("Matched suffix ["..targetSuffix.."] (Ignored Length)", Color3.fromRGB(200, 200, 0))
+                                    break
+                                end
+                            end
+                        end
+                        
+                        if not foundSuffix then
+                            if suffixModeEnabled then
+                                logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0))
+                            end
+                            finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
+                        end
+                        
+                        if #finalPool > 0 then
+                            local chosenWord = finalPool[math.random(1, #finalPool)]
+                            usedWords[chosenWord] = true 
+                            logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
+                            typeRemainingLetters(chosenWord, #settledPrefix)
+                        else
+                            logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
+                            if not missingPrefixes[settledPrefix] then
+                                missingPrefixes[settledPrefix] = true
+                                logMessage("📝 NOTED MISSING PREFIX: [" .. settledPrefix .. "]", Color3.fromRGB(255, 100, 100))
+                            end
+                        end
+                    else
+                        hasPlayedThisTurn = false 
+                    end
+                end)
+            end
+        else
+            hasPlayedThisTurn = false
+        end
+    end
+end)
