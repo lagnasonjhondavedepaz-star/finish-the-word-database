@@ -100,6 +100,7 @@ titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Active = false
 titleLabel.Parent = headerFrame
 
 -- HEADER DIVIDER
@@ -111,28 +112,36 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = mainFrame
 
 -- WINDOW DRAGGING
+local userInput = game:GetService("UserInputService")
 local dragging = false
-local dragOffset = nil
+local dragStart = nil
+local startPos = nil
 
-headerFrame.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+headerFrame.Active = true
+
+local function beginHeaderDrag(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
-        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-        dragOffset = UDim2.new(mainFrame.Position.X.Scale, mainFrame.Position.X.Offset - mousePos.X, mainFrame.Position.Y.Scale, mainFrame.Position.Y.Offset - mousePos.Y)
+        dragStart = input.Position
+        startPos = mainFrame.Position
     end
-end)
+end
 
-headerFrame.InputEnded:Connect(function(input, gameProcessed)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+headerFrame.InputBegan:Connect(beginHeaderDrag)
+titleLabel.InputBegan:Connect(beginHeaderDrag)
+
+userInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input, gameProcessed)
-    if dragging and dragOffset then
-        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-        mainFrame.Position = UDim2.new(dragOffset.X.Scale, mousePos.X + dragOffset.X.Offset, dragOffset.Y.Scale, mousePos.Y + dragOffset.Y.Offset)
+userInput.InputChanged:Connect(function(input)
+    if dragging and dragStart and startPos then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
     end
 end)
 
@@ -341,9 +350,9 @@ suffixFrame.Parent = settingsScroll
 local suffixGrid = Instance.new("UIGridLayout")
 suffixGrid.Parent = suffixFrame
 suffixGrid.SortOrder = Enum.SortOrder.LayoutOrder
-suffixGrid.CellSize = UDim2.new(0, 60, 0, 24)
+suffixGrid.CellSize = UDim2.new(0.5, -6, 0, 24)
 suffixGrid.CellPadding = UDim2.new(0, 6, 0, 6)
-suffixGrid.FillDirectionMaxCells = 3
+suffixGrid.FillDirectionMaxCells = 2
 
 local suffixButtons = {}
 
