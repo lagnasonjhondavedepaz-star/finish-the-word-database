@@ -95,7 +95,7 @@ end
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -20, 1, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = " FINISH THE WORD (V30) [TEST]"
+titleLabel.Text = " FINISH THE WORD [BETA]"
 titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
