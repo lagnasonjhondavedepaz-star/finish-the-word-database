@@ -309,10 +309,13 @@ end)
 -- SUFFIX SETTINGS
 local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY", "PT"}
 local selectedSuffixes = {}
+local suffixPriority = {}
 for _, suffix in ipairs(suffixOptions) do
     selectedSuffixes[suffix] = true
+    table.insert(suffixPriority, suffix)
 end
 local suffixLengthStrict = false
+local refreshSuffixOrderList
 
 local suffixLabel = Instance.new("TextLabel")
 suffixLabel.Size = UDim2.new(1, 0, 0, 22)
@@ -374,8 +377,22 @@ local function createSuffixButton(suffixName)
     btnCorner.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
-        selectedSuffixes[suffixName] = not selectedSuffixes[suffixName]
+        if selectedSuffixes[suffixName] then
+            selectedSuffixes[suffixName] = false
+            for i, name in ipairs(suffixPriority) do
+                if name == suffixName then
+                    table.remove(suffixPriority, i)
+                    break
+                end
+            end
+        else
+            selectedSuffixes[suffixName] = true
+            table.insert(suffixPriority, suffixName)
+        end
         refreshSuffixButtons()
+        if refreshSuffixOrderList then
+            refreshSuffixOrderList()
+        end
     end)
 
     table.insert(suffixButtons, btn)
@@ -386,19 +403,117 @@ for _, suffixName in ipairs(suffixOptions) do
     createSuffixButton(suffixName)
 end
 
-local suffixOrderButton = Instance.new("TextButton")
-suffixOrderButton.Size = UDim2.new(1, 0, 0, 28)
-suffixOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-suffixOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-suffixOrderButton.Font = Enum.Font.GothamBold
-suffixOrderButton.TextSize = 10
-suffixOrderButton.Text = "SUFFIX ORDER: LONGEST TO SHORTEST"
-suffixOrderButton.AutoButtonColor = false
-suffixOrderButton.Parent = settingsScroll
+local suffixOrderLabel = Instance.new("TextLabel")
+suffixOrderLabel.Size = UDim2.new(1, 0, 0, 22)
+suffixOrderLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+suffixOrderLabel.BorderSizePixel = 0
+suffixOrderLabel.Text = "SUFFIX ORDER (1st checked first)"
+suffixOrderLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+suffixOrderLabel.Font = Enum.Font.GothamBold
+suffixOrderLabel.TextSize = 11
+suffixOrderLabel.TextXAlignment = Enum.TextXAlignment.Left
+suffixOrderLabel.Parent = settingsScroll
 
-local suffixOrderCorner = Instance.new("UICorner")
-suffixOrderCorner.CornerRadius = UDim.new(0, 5)
-suffixOrderCorner.Parent = suffixOrderButton
+local suffixOrderPadding = Instance.new("UIPadding")
+suffixOrderPadding.PaddingLeft = UDim.new(0, 10)
+suffixOrderPadding.Parent = suffixOrderLabel
+
+local suffixOrderFrame = Instance.new("Frame")
+suffixOrderFrame.Size = UDim2.new(1, 0, 0, 0)
+suffixOrderFrame.AutomaticSize = Enum.AutomaticSize.Y
+suffixOrderFrame.BackgroundTransparency = 1
+suffixOrderFrame.Parent = settingsScroll
+
+local suffixOrderLayout = Instance.new("UIListLayout")
+suffixOrderLayout.Parent = suffixOrderFrame
+suffixOrderLayout.SortOrder = Enum.SortOrder.LayoutOrder
+suffixOrderLayout.Padding = UDim.new(0, 4)
+
+local suffixOrderRows = {}
+
+local function moveSuffixPriority(index, direction)
+    local newIndex = index + direction
+    if newIndex < 1 or newIndex > #suffixPriority then
+        return
+    end
+    suffixPriority[index], suffixPriority[newIndex] = suffixPriority[newIndex], suffixPriority[index]
+    refreshSuffixOrderList()
+end
+
+refreshSuffixOrderList = function()
+    for _, row in ipairs(suffixOrderRows) do
+        row:Destroy()
+    end
+    suffixOrderRows = {}
+
+    if #suffixPriority == 0 then
+        local emptyLabel = Instance.new("TextLabel")
+        emptyLabel.Size = UDim2.new(1, 0, 0, 22)
+        emptyLabel.BackgroundTransparency = 1
+        emptyLabel.Text = "No suffixes selected"
+        emptyLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+        emptyLabel.Font = Enum.Font.Gotham
+        emptyLabel.TextSize = 10
+        emptyLabel.TextXAlignment = Enum.TextXAlignment.Left
+        emptyLabel.Parent = suffixOrderFrame
+        table.insert(suffixOrderRows, emptyLabel)
+        return
+    end
+
+    for i, suffixName in ipairs(suffixPriority) do
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, 0, 0, 24)
+        row.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        row.BorderSizePixel = 0
+        row.Parent = suffixOrderFrame
+
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 4)
+        rowCorner.Parent = row
+
+        local upBtn = Instance.new("TextButton")
+        upBtn.Size = UDim2.new(0, 24, 1, 0)
+        upBtn.Position = UDim2.new(0, 0, 0, 0)
+        upBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        upBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        upBtn.Font = Enum.Font.GothamBold
+        upBtn.TextSize = 10
+        upBtn.Text = "▲"
+        upBtn.AutoButtonColor = false
+        upBtn.Parent = row
+
+        local downBtn = Instance.new("TextButton")
+        downBtn.Size = UDim2.new(0, 24, 1, 0)
+        downBtn.Position = UDim2.new(0, 26, 0, 0)
+        downBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        downBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        downBtn.Font = Enum.Font.GothamBold
+        downBtn.TextSize = 10
+        downBtn.Text = "▼"
+        downBtn.AutoButtonColor = false
+        downBtn.Parent = row
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -56, 1, 0)
+        nameLabel.Position = UDim2.new(0, 54, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = i .. ". " .. suffixName
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 10
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.Parent = row
+
+        upBtn.MouseButton1Click:Connect(function()
+            moveSuffixPriority(i, -1)
+        end)
+        downBtn.MouseButton1Click:Connect(function()
+            moveSuffixPriority(i, 1)
+        end)
+
+        table.insert(suffixOrderRows, row)
+    end
+end
 
 local suffixLengthButton = Instance.new("TextButton")
 suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
@@ -414,17 +529,21 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
-local suffixOrder = true
+local lengthOrderLongestFirst = false
 
-local function refreshSuffixOrderButton()
-    if suffixOrder then
-        suffixOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        suffixOrderButton.Text = "SUFFIX ORDER: LONGEST TO SHORTEST"
-    else
-        suffixOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        suffixOrderButton.Text = "SUFFIX ORDER: SHORTEST TO LONGEST"
-    end
-end
+local lengthOrderButton = Instance.new("TextButton")
+lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
+lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+lengthOrderButton.Font = Enum.Font.GothamBold
+lengthOrderButton.TextSize = 10
+lengthOrderButton.Text = "LENGTH ORDER: FEWEST TO LONGEST"
+lengthOrderButton.AutoButtonColor = false
+lengthOrderButton.Parent = settingsScroll
+
+local lengthOrderCorner = Instance.new("UICorner")
+lengthOrderCorner.CornerRadius = UDim.new(0, 5)
+lengthOrderCorner.Parent = lengthOrderButton
 
 local function refreshSuffixLengthButton()
     if suffixLengthStrict then
@@ -436,19 +555,30 @@ local function refreshSuffixLengthButton()
     end
 end
 
-suffixOrderButton.MouseButton1Click:Connect(function()
-    suffixOrder = not suffixOrder
-    refreshSuffixOrderButton()
-end)
+local function refreshLengthOrderButton()
+    if lengthOrderLongestFirst then
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        lengthOrderButton.Text = "LENGTH ORDER: LONGEST TO FEWEST"
+    else
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        lengthOrderButton.Text = "LENGTH ORDER: FEWEST TO LONGEST"
+    end
+end
 
 suffixLengthButton.MouseButton1Click:Connect(function()
     suffixLengthStrict = not suffixLengthStrict
     refreshSuffixLengthButton()
 end)
 
+lengthOrderButton.MouseButton1Click:Connect(function()
+    lengthOrderLongestFirst = not lengthOrderLongestFirst
+    refreshLengthOrderButton()
+end)
+
 refreshSuffixButtons()
-refreshSuffixOrderButton()
+refreshSuffixOrderList()
 refreshSuffixLengthButton()
+refreshLengthOrderButton()
 
 -- Update settings canvas size when layout changes
 settingsLayout.Changed:Connect(function()
@@ -631,24 +761,7 @@ end)
 local suffixModeEnabled = true
 
 local function getSelectedSuffixes()
-    local suffixList = {}
-    for _, suffixName in ipairs(suffixOptions) do
-        if selectedSuffixes[suffixName] then
-            table.insert(suffixList, suffixName)
-        end
-    end
-
-    if suffixOrder then
-        table.sort(suffixList, function(a, b)
-            return #a > #b
-        end)
-    else
-        table.sort(suffixList, function(a, b)
-            return #a < #b
-        end)
-    end
-
-    return suffixList
+    return suffixPriority
 end
 
 local function matchesLengthMode(word)
@@ -658,6 +771,44 @@ local function matchesLengthMode(word)
         return #word >= 10
     end
     return true
+end
+
+local function pickByLengthOrder(pool)
+    if #pool == 0 then
+        return nil
+    end
+
+    local ranked = {}
+    for _, word in ipairs(pool) do
+        if matchesLengthMode(word) then
+            table.insert(ranked, word)
+        end
+    end
+    if #ranked == 0 then
+        ranked = pool
+    end
+
+    local bestLen = #ranked[1]
+    for _, word in ipairs(ranked) do
+        if lengthOrderLongestFirst then
+            if #word > bestLen then
+                bestLen = #word
+            end
+        else
+            if #word < bestLen then
+                bestLen = #word
+            end
+        end
+    end
+
+    local best = {}
+    for _, word in ipairs(ranked) do
+        if #word == bestLen then
+            table.insert(best, word)
+        end
+    end
+
+    return best[math.random(1, #best)]
 end
 
 -- WORD DB FROM GITHUB
@@ -1009,7 +1160,7 @@ task.spawn(function()
                         end
                         
                         if #finalPool > 0 then
-                            local chosenWord = finalPool[math.random(1, #finalPool)]
+                            local chosenWord = pickByLengthOrder(finalPool)
                             usedWords[chosenWord] = true 
                             if autoAnswerEnabled then
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
