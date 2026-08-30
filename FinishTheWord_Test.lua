@@ -350,9 +350,11 @@ suffixFrame.Parent = settingsScroll
 local suffixGrid = Instance.new("UIGridLayout")
 suffixGrid.Parent = suffixFrame
 suffixGrid.SortOrder = Enum.SortOrder.LayoutOrder
-suffixGrid.CellSize = UDim2.new(0.5, -6, 0, 24)
+-- Changed width from 0.5 (50%) to 0.25 (25%) to accommodate 4 columns
+suffixGrid.CellSize = UDim2.new(0.25, -6, 0, 24)
 suffixGrid.CellPadding = UDim2.new(0, 6, 0, 6)
-suffixGrid.FillDirectionMaxCells = 2
+-- Changed from 2 to 4 cells per row, creating exactly 2 rows for the 8 suffixes
+suffixGrid.FillDirectionMaxCells = 4
 
 local suffixButtons = {}
 
