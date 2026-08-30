@@ -261,7 +261,7 @@ autoAnswerContainer.Parent = settingsScroll
 local autoAnswerLabel = Instance.new("TextLabel")
 autoAnswerLabel.Size = UDim2.new(1, -110, 1, 0)
 autoAnswerLabel.BackgroundTransparency = 1
-autoAnswerLabel.Text = "🤖 AUTO ANSWER"
+autoAnswerLabel.Text = "🤖 AUTO-TYPE ANSWERS"
 autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 autoAnswerLabel.Font = Enum.Font.GothamBold
 autoAnswerLabel.TextSize = 11
@@ -304,7 +304,7 @@ end)
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
 usedWordsLabel.BackgroundTransparency = 1
-usedWordsLabel.Text = "📊 Words Used (Auto & Manual): 0"
+usedWordsLabel.Text = "📊 WORDS ALREADY USED: 0"
 usedWordsLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
 usedWordsLabel.Font = Enum.Font.Code
 usedWordsLabel.TextSize = 10
@@ -316,7 +316,7 @@ task.spawn(function()
     while isRunning do
         local count = 0
         for _ in pairs(usedWords) do count = count + 1 end
-        usedWordsLabel.Text = "📊 Words Used (Auto & Manual): " .. count
+        usedWordsLabel.Text = "📊 WORDS ALREADY USED: " .. count
         task.wait(1)
     end
 end)
@@ -336,7 +336,7 @@ local suffixLabel = Instance.new("TextLabel")
 suffixLabel.Size = UDim2.new(1, 0, 0, 22)
 suffixLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 suffixLabel.BorderSizePixel = 0
-suffixLabel.Text = "🎯 TARGET SUFFIX"
+suffixLabel.Text = "🎯 PREFERRED WORD ENDINGS (SUFFIXES)"
 suffixLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 suffixLabel.Font = Enum.Font.GothamBold
 suffixLabel.TextSize = 11
@@ -424,7 +424,7 @@ local suffixOrderLabel = Instance.new("TextLabel")
 suffixOrderLabel.Size = UDim2.new(1, 0, 0, 22)
 suffixOrderLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 suffixOrderLabel.BorderSizePixel = 0
-suffixOrderLabel.Text = "SUFFIX ORDER (1st checked first)"
+suffixOrderLabel.Text = "📋 ENDING PRIORITY (TOP IS CHECKED FIRST)"
 suffixOrderLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 suffixOrderLabel.Font = Enum.Font.GothamBold
 suffixOrderLabel.TextSize = 11
@@ -538,7 +538,7 @@ suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 suffixLengthButton.Font = Enum.Font.GothamBold
 suffixLengthButton.TextSize = 10
-suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
 suffixLengthButton.AutoButtonColor = false
 suffixLengthButton.Parent = settingsScroll
 
@@ -554,7 +554,7 @@ lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 lengthOrderButton.Font = Enum.Font.GothamBold
 lengthOrderButton.TextSize = 10
-lengthOrderButton.Text = "LENGTH ORDER: FEWEST TO LONGEST"
+lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
 lengthOrderButton.AutoButtonColor = false
 lengthOrderButton.Parent = settingsScroll
 
@@ -565,20 +565,20 @@ lengthOrderCorner.Parent = lengthOrderButton
 local function refreshSuffixLengthButton()
     if suffixLengthStrict then
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        suffixLengthButton.Text = "LENGTH: IGNORE SUFFIX IF NOT MATCHED"
+        suffixLengthButton.Text = "⚙️ PRIORITY: LENGTH OVER PREFERRED ENDING"
     else
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        suffixLengthButton.Text = "LENGTH: USE SUFFIX EVEN IF NOT MATCHED"
+        suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
     end
 end
 
 local function refreshLengthOrderButton()
     if lengthOrderLongestFirst then
         lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        lengthOrderButton.Text = "LENGTH ORDER: LONGEST TO FEWEST"
+        lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
     else
         lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        lengthOrderButton.Text = "LENGTH ORDER: FEWEST TO LONGEST"
+        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
     end
 end
 
@@ -638,7 +638,7 @@ local function createButton(text, bgColor)
     return btn
 end
 
-local modeButton = createButton(" LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
+local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200))
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
@@ -788,8 +788,8 @@ updateStatusIndicator()
 -- STATES & TOGGLES
 local lengthMode = 1 
 local lengthLabels = {
-    " LENGTH: SHORT (9 or less)",
-    " LENGTH: LONG (10 or more)"
+    " 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)",
+    " 🎯 TARGET LENGTH: LONG (10+ LETTERS)"
 }
 modeButton.MouseButton1Click:Connect(function()
     lengthMode = lengthMode == 1 and 2 or 1
