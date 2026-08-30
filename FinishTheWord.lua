@@ -135,13 +135,291 @@ game:GetService("UserInputService").InputChanged:Connect(function(input, gamePro
     end
 end)
 
--- CONTROLS SECTION
+-- NAVIGATION BAR
+local navBar = Instance.new("Frame")
+navBar.Size = UDim2.new(1, 0, 0, 35)
+navBar.Position = UDim2.new(0, 0, 0, 32)
+navBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+navBar.BorderSizePixel = 0
+navBar.Parent = mainFrame
+
+local navLayout = Instance.new("UIListLayout")
+navLayout.Parent = navBar
+navLayout.SortOrder = Enum.SortOrder.LayoutOrder
+navLayout.FillDirection = Enum.FillDirection.Horizontal
+navLayout.Padding = UDim.new(0, 4)
+navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+local function createNavTab(text)
+    local tab = Instance.new("TextButton")
+    tab.Size = UDim2.new(0, 90, 0, 28)
+    tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    tab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    tab.Font = Enum.Font.GothamBold
+    tab.TextSize = 10
+    tab.Text = text
+    tab.Parent = navBar
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 4)
+    tabCorner.Parent = tab
+    return tab
+end
+
+local settingsTab = createNavTab("⚙ SETTINGS")
+local consoleTab = createNavTab("📋 CONSOLE")
+local updateTab = createNavTab("📝 UPDATE LOG")
+
+-- CONTENT PANELS
+local settingsPanel = Instance.new("Frame")
+settingsPanel.Size = UDim2.new(1, 0, 1, -82)
+settingsPanel.Position = UDim2.new(0, 0, 0, 67)
+settingsPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+settingsPanel.BorderSizePixel = 0
+settingsPanel.Visible = false
+settingsPanel.Parent = mainFrame
+
+local consolePanel = Instance.new("Frame")
+consolePanel.Size = UDim2.new(1, 0, 1, -82)
+consolePanel.Position = UDim2.new(0, 0, 0, 67)
+consolePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+consolePanel.BorderSizePixel = 0
+consolePanel.Visible = true
+consolePanel.Parent = mainFrame
+
+local updatePanel = Instance.new("Frame")
+updatePanel.Size = UDim2.new(1, 0, 1, -82)
+updatePanel.Position = UDim2.new(0, 0, 0, 67)
+updatePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+updatePanel.BorderSizePixel = 0
+updatePanel.Visible = false
+updatePanel.Parent = mainFrame
+
+-- TAB SWITCHING
+local currentTab = "console"
+
+local function switchTab(tabName)
+    currentTab = tabName
+    settingsPanel.Visible = (tabName == "settings")
+    consolePanel.Visible = (tabName == "console")
+    updatePanel.Visible = (tabName == "update")
+    
+    -- Update tab colors
+    if tabName == "settings" then
+        settingsTab.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+        settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        updateTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        updateTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    elseif tabName == "console" then
+        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        updateTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        updateTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    else
+        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        updateTab.BackgroundColor3 = Color3.fromRGB(180, 120, 0)
+        updateTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end
+
+settingsTab.MouseButton1Click:Connect(function()
+    switchTab("settings")
+end)
+
+consoleTab.MouseButton1Click:Connect(function()
+    switchTab("console")
+end)
+
+updateTab.MouseButton1Click:Connect(function()
+    switchTab("update")
+end)
+
+-- SETTINGS PANEL CONTENT
+local settingsPadding = Instance.new("UIPadding")
+settingsPadding.PaddingLeft = UDim.new(0, 15)
+settingsPadding.PaddingRight = UDim.new(0, 15)
+settingsPadding.PaddingTop = UDim.new(0, 15)
+settingsPadding.Parent = settingsPanel
+
+local settingsLayout = Instance.new("UIListLayout")
+settingsLayout.Parent = settingsPanel
+settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+settingsLayout.Padding = UDim.new(0, 12)
+
+-- Auto Answer Toggle
+local autoAnswerLabel = Instance.new("TextLabel")
+autoAnswerLabel.Size = UDim2.new(1, 0, 0, 25)
+autoAnswerLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+autoAnswerLabel.BorderSizePixel = 0
+autoAnswerLabel.Text = "🤖 AUTO ANSWER"
+autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+autoAnswerLabel.Font = Enum.Font.GothamBold
+autoAnswerLabel.TextSize = 12
+autoAnswerLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoAnswerLabel.Parent = settingsPanel
+
+local labelPadding = Instance.new("UIPadding")
+labelPadding.PaddingLeft = UDim.new(0, 10)
+labelPadding.Parent = autoAnswerLabel
+
+local autoAnswerToggle = Instance.new("TextButton")
+autoAnswerToggle.Size = UDim2.new(1, 0, 0, 32)
+autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+autoAnswerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoAnswerToggle.Font = Enum.Font.GothamBold
+autoAnswerToggle.TextSize = 11
+autoAnswerToggle.Text = "✓ ENABLED"
+autoAnswerToggle.Parent = settingsPanel
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = autoAnswerToggle
+
+local autoAnswerEnabled = true
+
+autoAnswerToggle.MouseButton1Click:Connect(function()
+    autoAnswerEnabled = not autoAnswerEnabled
+    if autoAnswerEnabled then
+        autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        autoAnswerToggle.Text = "✓ ENABLED"
+        logMessage("Auto Answer: ENABLED", Color3.fromRGB(0, 255, 0))
+    else
+        autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        autoAnswerToggle.Text = "✗ DISABLED"
+        logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
+    end
+end)
+
+local usedWordsLabel = Instance.new("TextLabel")
+usedWordsLabel.Size = UDim2.new(1, 0, 0, 20)
+usedWordsLabel.BackgroundTransparency = 1
+usedWordsLabel.Text = "📊 Words Used (Auto & Manual): 0"
+usedWordsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+usedWordsLabel.Font = Enum.Font.Code
+usedWordsLabel.TextSize = 11
+usedWordsLabel.TextXAlignment = Enum.TextXAlignment.Left
+usedWordsLabel.Parent = settingsPanel
+
+-- Update used words counter every second
+task.spawn(function()
+    while isRunning do
+        local count = 0
+        for _ in pairs(usedWords) do count = count + 1 end
+        usedWordsLabel.Text = "📊 Words Used (Auto & Manual): " .. count
+        task.wait(1)
+    end
+end)
+
+-- UPDATE LOG PANEL
+local updatePadding = Instance.new("UIPadding")
+updatePadding.PaddingLeft = UDim.new(0, 15)
+updatePadding.PaddingRight = UDim.new(0, 15)
+updatePadding.PaddingTop = UDim.new(0, 15)
+updatePadding.Parent = updatePanel
+
+local updateScroll = Instance.new("ScrollingFrame")
+updateScroll.Size = UDim2.new(1, 0, 1, 0)
+updateScroll.BackgroundTransparency = 1
+updateScroll.BorderSizePixel = 0
+updateScroll.ScrollBarThickness = 4
+updateScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+updateScroll.Parent = updatePanel
+
+local updateLayout = Instance.new("UIListLayout")
+updateLayout.Parent = updateScroll
+updateLayout.SortOrder = Enum.SortOrder.LayoutOrder
+updateLayout.Padding = UDim.new(0, 6)
+
+local function addUpdateLog(title, description, version)
+    local updateItem = Instance.new("Frame")
+    updateItem.Size = UDim2.new(1, 0, 0, 0)
+    updateItem.AutomaticSize = Enum.AutomaticSize.Y
+    updateItem.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    updateItem.BorderSizePixel = 0
+    updateItem.Parent = updateScroll
+    
+    local itemCorner = Instance.new("UICorner")
+    itemCorner.CornerRadius = UDim.new(0, 4)
+    itemCorner.Parent = updateItem
+    
+    local itemPadding = Instance.new("UIPadding")
+    itemPadding.PaddingLeft = UDim.new(0, 10)
+    itemPadding.PaddingRight = UDim.new(0, 10)
+    itemPadding.PaddingTop = UDim.new(0, 8)
+    itemPadding.PaddingBottom = UDim.new(0, 8)
+    itemPadding.Parent = updateItem
+    
+    local itemLayout = Instance.new("UIListLayout")
+    itemLayout.Parent = updateItem
+    itemLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    itemLayout.Padding = UDim.new(0, 4)
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 0)
+    titleLabel.AutomaticSize = Enum.AutomaticSize.Y
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 11
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.TextWrapped = true
+    titleLabel.Parent = updateItem
+    
+    local descLabel = Instance.new("TextLabel")
+    descLabel.Size = UDim2.new(1, 0, 0, 0)
+    descLabel.AutomaticSize = Enum.AutomaticSize.Y
+    descLabel.BackgroundTransparency = 1
+    descLabel.Text = description
+    descLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    descLabel.Font = Enum.Font.Code
+    descLabel.TextSize = 10
+    descLabel.TextXAlignment = Enum.TextXAlignment.Left
+    descLabel.TextWrapped = true
+    descLabel.Parent = updateItem
+    
+    local versionLabel = Instance.new("TextLabel")
+    versionLabel.Size = UDim2.new(1, 0, 0, 15)
+    versionLabel.BackgroundTransparency = 1
+    versionLabel.Text = "v" .. version
+    versionLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
+    versionLabel.Font = Enum.Font.Code
+    versionLabel.TextSize = 9
+    versionLabel.TextXAlignment = Enum.TextXAlignment.Right
+    versionLabel.Parent = updateItem
+end
+
+-- Add update logs
+addUpdateLog("✓ Main window positioning fixed", "Centered at 0.2, 0.2 with proper constraints", "30")
+addUpdateLog("✓ Visual separation added", "Header, controls, and console sections properly styled", "30")
+addUpdateLog("✓ Compact button layout", "Reduced button height and spacing for efficiency", "30")
+addUpdateLog("✓ Console with timestamps", "Terminal-style messages with status indicators", "30")
+addUpdateLog("✓ Status indicator light", "Green (running) / Red (stopped) indicator in header", "30")
+addUpdateLog("✓ Toggle button redesigned", "Changed from TOGGLE UI to ◉ CONSOLE / ○ HIDDEN", "30")
+addUpdateLog("✓ Window dragging enabled", "Click and drag header to move panel anywhere", "30")
+addUpdateLog("✓ Navigation bar added", "Switch between Settings, Console, and Update Log tabs", "30")
+
+updateScroll.CanvasSize = UDim2.new(0, 0, 0, updateLayout.AbsoluteContentSize.Y)
+
+-- Update canvas size when layout changes
+updateLayout.Changed:Connect(function()
+    updateScroll.CanvasSize = UDim2.new(0, 0, 0, updateLayout.AbsoluteContentSize.Y)
+end)
+
+-- CONTROLS SECTION (moved to settings)
 local controlsSection = Instance.new("Frame")
 controlsSection.Size = UDim2.new(1, 0, 0, 125)
 controlsSection.Position = UDim2.new(0, 0, 0, 32)
 controlsSection.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 controlsSection.BorderSizePixel = 0
-controlsSection.Parent = mainFrame
+controlsSection.Parent = settingsPanel
 
 -- BUTTON CONTAINER
 local buttonContainer = Instance.new("Frame")
@@ -177,13 +455,13 @@ local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60)
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, -159)
-scrollFrame.Position = UDim2.new(0, 0, 0, 159)
+scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+scrollFrame.Position = UDim2.new(0, 0, 0, 0)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
 scrollFrame.CanvasSize = UDim2.new(0, 0, 40, 0)
-scrollFrame.Parent = mainFrame
+scrollFrame.Parent = consolePanel
 
 -- CONSOLE PADDING
 local consolePadding = Instance.new("UIPadding")
@@ -196,14 +474,6 @@ local uiLayout = Instance.new("UIListLayout")
 uiLayout.Parent = scrollFrame
 uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiLayout.Padding = UDim.new(0, 2)
-
--- CONSOLE DIVIDER
-local consoleDivider = Instance.new("Frame")
-consoleDivider.Size = UDim2.new(1, 0, 0, 2)
-consoleDivider.Position = UDim2.new(0, 0, 0, 157)
-consoleDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-consoleDivider.BorderSizePixel = 0
-consoleDivider.Parent = mainFrame
 
 local function getStatusIndicator(color)
     if color == Color3.fromRGB(0, 255, 0) then
@@ -679,8 +949,12 @@ task.spawn(function()
                         if #finalPool > 0 then
                             local chosenWord = finalPool[math.random(1, #finalPool)]
                             usedWords[chosenWord] = true 
-                            logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                            typeRemainingLetters(chosenWord, #settledPrefix)
+                            if autoAnswerEnabled then
+                                logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
+                                typeRemainingLetters(chosenWord, #settledPrefix)
+                            else
+                                logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
+                            end
                         else
                             logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
                             if not missingPrefixes[settledPrefix] then
