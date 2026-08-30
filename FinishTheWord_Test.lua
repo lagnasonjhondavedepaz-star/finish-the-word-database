@@ -57,6 +57,54 @@ toggleBtn.MouseButton1Click:Connect(function()
     updateToggleButton()
 end)
 
+-- TOGGLE BUTTON DRAGGING & CLICK LOGIC
+local toggleDragging = false
+local toggleDragStart = nil
+local toggleStartPos = nil
+local hasDragged = false
+
+toggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        toggleDragging = true
+        hasDragged = false
+        toggleDragStart = input.Position
+        toggleStartPos = toggleBtn.Position
+    end
+end)
+
+userInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        toggleDragging = false
+    end
+end)
+
+userInput.InputChanged:Connect(function(input)
+    if toggleDragging and toggleDragStart and toggleStartPos then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - toggleDragStart
+            
+            -- Only consider it a drag if moved more than 3 pixels
+            if delta.Magnitude > 3 then
+                hasDragged = true
+            end
+            
+            toggleBtn.Position = UDim2.new(
+                toggleStartPos.X.Scale, 
+                toggleStartPos.X.Offset + delta.X, 
+                toggleStartPos.Y.Scale, 
+                toggleStartPos.Y.Offset + delta.Y
+            )
+        end
+    end
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    if not hasDragged then
+        mainFrame.Visible = not mainFrame.Visible
+        updateToggleButton()
+    end
+end)
+
 -- HEADER SECTION
 local headerFrame = Instance.new("Frame")
 headerFrame.Size = UDim2.new(1, 0, 0, 30)
