@@ -252,29 +252,35 @@ settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 settingsLayout.Padding = UDim.new(0, 10)
 
 -- Auto Answer Toggle
+local autoAnswerContainer = Instance.new("Frame")
+autoAnswerContainer.Size = UDim2.new(1, 0, 0, 34)
+autoAnswerContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+autoAnswerContainer.BorderSizePixel = 0
+autoAnswerContainer.Parent = settingsScroll
+
 local autoAnswerLabel = Instance.new("TextLabel")
-autoAnswerLabel.Size = UDim2.new(1, 0, 0, 22)
-autoAnswerLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-autoAnswerLabel.BorderSizePixel = 0
+autoAnswerLabel.Size = UDim2.new(1, -110, 1, 0)
+autoAnswerLabel.BackgroundTransparency = 1
 autoAnswerLabel.Text = "🤖 AUTO ANSWER"
 autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 autoAnswerLabel.Font = Enum.Font.GothamBold
 autoAnswerLabel.TextSize = 11
 autoAnswerLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoAnswerLabel.Parent = settingsScroll
+autoAnswerLabel.Parent = autoAnswerContainer
 
 local labelPadding = Instance.new("UIPadding")
 labelPadding.PaddingLeft = UDim.new(0, 10)
 labelPadding.Parent = autoAnswerLabel
 
 local autoAnswerToggle = Instance.new("TextButton")
-autoAnswerToggle.Size = UDim2.new(1, 0, 0, 34)
+autoAnswerToggle.Size = UDim2.new(0, 100, 0, 26)
+autoAnswerToggle.Position = UDim2.new(1, -106, 0.5, -13)
 autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 autoAnswerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoAnswerToggle.Font = Enum.Font.GothamBold
 autoAnswerToggle.TextSize = 11
 autoAnswerToggle.Text = "✓ ENABLED"
-autoAnswerToggle.Parent = settingsScroll
+autoAnswerToggle.Parent = autoAnswerContainer
 
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
@@ -633,7 +639,6 @@ local function createButton(text, bgColor)
 end
 
 local modeButton = createButton(" LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
-local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
@@ -876,7 +881,6 @@ local function clearBlacklist()
     missingPrefixes = {}
     logMessage("--- BLACKLIST CLEARED ---", Color3.fromRGB(255, 255, 0))
 end
-resetButton.MouseButton1Click:Connect(clearBlacklist)
 
 local inGameConnection = localPlayer:GetAttributeChangedSignal("InGame"):Connect(function()
     if localPlayer:GetAttribute("InGame") ~= 2 then
