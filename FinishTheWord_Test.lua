@@ -30,8 +30,8 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.55, 0, 0.55, 0)
-mainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
+mainFrame.Size = UDim2.new(0.55, 0, 0.75, 0)
+mainFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -631,7 +631,10 @@ scrollFrame.Position = UDim2.new(0, 0, 0, 0)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
-scrollFrame.CanvasSize = UDim2.new(0, 0, 40, 0)
+scrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+scrollFrame.ElasticBehavior = Enum.ElasticBehavior.Never
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = consolePanel
 
 -- CONSOLE PADDING
@@ -639,12 +642,30 @@ local consolePadding = Instance.new("UIPadding")
 consolePadding.PaddingLeft = UDim.new(0, 10)
 consolePadding.PaddingRight = UDim.new(0, 10)
 consolePadding.PaddingTop = UDim.new(0, 5)
+consolePadding.PaddingBottom = UDim.new(0, 5)
 consolePadding.Parent = scrollFrame
 
 local uiLayout = Instance.new("UIListLayout")
 uiLayout.Parent = scrollFrame
 uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiLayout.Padding = UDim.new(0, 2)
+
+local function updateConsoleScroll()
+    local paddingY = consolePadding.PaddingTop.Offset + consolePadding.PaddingBottom.Offset
+    local contentHeight = uiLayout.AbsoluteContentSize.Y + paddingY
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    local viewHeight = scrollFrame.AbsoluteWindowSize.Y
+    if viewHeight <= 0 then
+        viewHeight = scrollFrame.AbsoluteSize.Y
+    end
+    if contentHeight > viewHeight then
+        scrollFrame.CanvasPosition = Vector2.new(0, contentHeight - viewHeight)
+    else
+        scrollFrame.CanvasPosition = Vector2.new(0, 0)
+    end
+end
+
+uiLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateConsoleScroll)
 
 local function getStatusIndicator(color)
     if color == Color3.fromRGB(0, 255, 0) then
@@ -741,6 +762,8 @@ local function logMessage(text, color)
     msg.TextXAlignment = Enum.TextXAlignment.Left
     msg.Text = text
     msg.Parent = contentFrame
+
+    task.defer(updateConsoleScroll)
 end
 
 logMessage("System Initialized! Ready to dominate. [TEST VERSION]", Color3.fromRGB(0, 255, 0))
