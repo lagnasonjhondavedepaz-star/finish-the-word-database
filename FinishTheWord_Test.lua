@@ -920,7 +920,8 @@ local function readInputBox()
     return fullText
 end
 
-local function typeRemainingLetters(fullWord, prefixLength)
+-- Added a 3rd parameter: isPlayingUsedWord
+local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
     local willStartDelay = false
@@ -947,10 +948,11 @@ local function typeRemainingLetters(fullWord, prefixLength)
         typoRate = 45
     end
     
-    local willMakeTypo = (math.random(1, 100) <= typoRate)
+    -- Disabled typos if isPlayingUsedWord is true
+    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
     local typosToMake = 1
-    local willAddEndTypo = (math.random(1, 100) <= 10) 
+    local willAddEndTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= 10) 
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
@@ -1224,7 +1226,8 @@ task.spawn(function()
                             usedWords[chosenWord] = true 
                             if autoAnswerEnabled then
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                                typeRemainingLetters(chosenWord, #settledPrefix)
+                                -- Added isPlayingUsedWord to the function call
+                                typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord)
                                 
                                 -- If we purposefully played a used word, wait 1s for the game to reject it, 
                                 -- backspace the letters we added, then reset hasPlayedThisTurn.
