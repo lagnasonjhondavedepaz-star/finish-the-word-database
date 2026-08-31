@@ -30,11 +30,12 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.6, 0, 0.5, 0)
-mainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
+mainFrame.Size = UDim2.new(0.55, 0, 0.75, 0)
+mainFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -94,11 +95,12 @@ end
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -20, 1, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = " FINISH THE WORD (V30)"
+titleLabel.Text = " FINISH THE WORD [BETA]"
 titleLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 14
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Active = false
 titleLabel.Parent = headerFrame
 
 -- HEADER DIVIDER
@@ -110,86 +112,553 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = mainFrame
 
 -- WINDOW DRAGGING
+local userInput = game:GetService("UserInputService")
 local dragging = false
-local dragOffset = nil
+local dragStart = nil
+local startPos = nil
 
-headerFrame.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+headerFrame.Active = true
+
+local function beginHeaderDrag(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
-        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-        dragOffset = UDim2.new(mainFrame.Position.X.Scale, mainFrame.Position.X.Offset - mousePos.X, mainFrame.Position.Y.Scale, mainFrame.Position.Y.Offset - mousePos.Y)
+        dragStart = input.Position
+        startPos = mainFrame.Position
     end
-end)
+end
 
-headerFrame.InputEnded:Connect(function(input, gameProcessed)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+headerFrame.InputBegan:Connect(beginHeaderDrag)
+titleLabel.InputBegan:Connect(beginHeaderDrag)
+
+userInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input, gameProcessed)
-    if dragging and dragOffset then
-        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-        mainFrame.Position = UDim2.new(dragOffset.X.Scale, mousePos.X + dragOffset.X.Offset, dragOffset.Y.Scale, mousePos.Y + dragOffset.Y.Offset)
+userInput.InputChanged:Connect(function(input)
+    if dragging and dragStart and startPos then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
     end
 end)
 
--- CONTROLS SECTION
+-- NAVIGATION BAR
+local navBar = Instance.new("Frame")
+navBar.Size = UDim2.new(1, 0, 0, 35)
+navBar.Position = UDim2.new(0, 0, 0, 32)
+navBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+navBar.BorderSizePixel = 0
+navBar.Parent = mainFrame
+
+local navLayout = Instance.new("UIListLayout")
+navLayout.Parent = navBar
+navLayout.SortOrder = Enum.SortOrder.LayoutOrder
+navLayout.FillDirection = Enum.FillDirection.Horizontal
+navLayout.Padding = UDim.new(0, 6)
+navLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+local function createNavTab(text)
+    local tab = Instance.new("TextButton")
+    tab.Size = UDim2.new(0, 110, 0, 28)
+    tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    tab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    tab.Font = Enum.Font.GothamBold
+    tab.TextSize = 10
+    tab.Text = text
+    tab.AutoButtonColor = false
+    tab.Parent = navBar
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 5)
+    tabCorner.Parent = tab
+    return tab
+end
+
+local settingsTab = createNavTab("⚙ SETTINGS")
+local consoleTab = createNavTab("📋 CONSOLE")
+
+-- CONTENT PANELS
+local settingsPanel = Instance.new("Frame")
+settingsPanel.Size = UDim2.new(1, 0, 1, -82)
+settingsPanel.Position = UDim2.new(0, 0, 0, 67)
+settingsPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+settingsPanel.BorderSizePixel = 0
+settingsPanel.ClipsDescendants = true
+settingsPanel.Visible = false
+settingsPanel.Parent = mainFrame
+
+local consolePanel = Instance.new("Frame")
+consolePanel.Size = UDim2.new(1, 0, 1, -82)
+consolePanel.Position = UDim2.new(0, 0, 0, 67)
+consolePanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+consolePanel.BorderSizePixel = 0
+consolePanel.ClipsDescendants = true
+consolePanel.Visible = true
+consolePanel.Parent = mainFrame
+
+-- TAB SWITCHING
+local currentTab = "console"
+
+local function switchTab(tabName)
+    currentTab = tabName
+    settingsPanel.Visible = (tabName == "settings")
+    consolePanel.Visible = (tabName == "console")
+    
+    -- Update tab colors
+    if tabName == "settings" then
+        settingsTab.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+        settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    else
+        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end
+
+settingsTab.MouseButton1Click:Connect(function()
+    switchTab("settings")
+end)
+
+consoleTab.MouseButton1Click:Connect(function()
+    switchTab("console")
+end)
+
+-- SETTINGS PANEL CONTENT
+local settingsScroll = Instance.new("ScrollingFrame")
+settingsScroll.Size = UDim2.new(1, 0, 1, 0)
+settingsScroll.BackgroundTransparency = 1
+settingsScroll.BorderSizePixel = 0
+settingsScroll.ScrollBarThickness = 4
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+settingsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+settingsScroll.Parent = settingsPanel
+
+local settingsPadding = Instance.new("UIPadding")
+settingsPadding.PaddingLeft = UDim.new(0, 12)
+settingsPadding.PaddingRight = UDim.new(0, 12)
+settingsPadding.PaddingTop = UDim.new(0, 12)
+settingsPadding.Parent = settingsScroll
+
+local settingsLayout = Instance.new("UIListLayout")
+settingsLayout.Parent = settingsScroll
+settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+settingsLayout.Padding = UDim.new(0, 10)
+
+-- Auto Answer Toggle
+local autoAnswerContainer = Instance.new("Frame")
+autoAnswerContainer.Size = UDim2.new(1, 0, 0, 34)
+autoAnswerContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+autoAnswerContainer.BorderSizePixel = 0
+autoAnswerContainer.Parent = settingsScroll
+
+local autoAnswerLabel = Instance.new("TextLabel")
+autoAnswerLabel.Size = UDim2.new(1, -110, 1, 0)
+autoAnswerLabel.BackgroundTransparency = 1
+autoAnswerLabel.Text = "🤖 AUTO-TYPE ANSWERS"
+autoAnswerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+autoAnswerLabel.Font = Enum.Font.GothamBold
+autoAnswerLabel.TextSize = 11
+autoAnswerLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoAnswerLabel.Parent = autoAnswerContainer
+
+local labelPadding = Instance.new("UIPadding")
+labelPadding.PaddingLeft = UDim.new(0, 10)
+labelPadding.Parent = autoAnswerLabel
+
+local autoAnswerToggle = Instance.new("TextButton")
+autoAnswerToggle.Size = UDim2.new(0, 100, 0, 26)
+autoAnswerToggle.Position = UDim2.new(1, -106, 0.5, -13)
+autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+autoAnswerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoAnswerToggle.Font = Enum.Font.GothamBold
+autoAnswerToggle.TextSize = 11
+autoAnswerToggle.Text = "✓ ENABLED"
+autoAnswerToggle.Parent = autoAnswerContainer
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = autoAnswerToggle
+
+local autoAnswerEnabled = true
+
+autoAnswerToggle.MouseButton1Click:Connect(function()
+    autoAnswerEnabled = not autoAnswerEnabled
+    if autoAnswerEnabled then
+        autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        autoAnswerToggle.Text = "✓ ENABLED"
+        logMessage("Auto Answer: ENABLED", Color3.fromRGB(0, 255, 0))
+    else
+        autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        autoAnswerToggle.Text = "✗ DISABLED"
+        logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
+    end
+end)
+
+local usedWordsLabel = Instance.new("TextLabel")
+usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
+usedWordsLabel.BackgroundTransparency = 1
+usedWordsLabel.Text = "📊 WORDS ALREADY USED: 0"
+usedWordsLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+usedWordsLabel.Font = Enum.Font.Code
+usedWordsLabel.TextSize = 10
+usedWordsLabel.TextXAlignment = Enum.TextXAlignment.Left
+usedWordsLabel.Parent = settingsScroll
+
+-- Update used words counter every second
+task.spawn(function()
+    while isRunning do
+        local count = 0
+        for _ in pairs(usedWords) do count = count + 1 end
+        usedWordsLabel.Text = "📊 WORDS ALREADY USED: " .. count
+        task.wait(1)
+    end
+end)
+
+-- SUFFIX SETTINGS
+local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY", "PT"}
+local selectedSuffixes = {}
+local suffixPriority = {}
+for _, suffix in ipairs(suffixOptions) do
+    selectedSuffixes[suffix] = true
+    table.insert(suffixPriority, suffix)
+end
+local suffixLengthStrict = false
+local refreshSuffixOrderList
+
+local suffixLabel = Instance.new("TextLabel")
+suffixLabel.Size = UDim2.new(1, 0, 0, 22)
+suffixLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+suffixLabel.BorderSizePixel = 0
+suffixLabel.Text = "🎯 PREFERRED WORD ENDINGS (SUFFIXES)"
+suffixLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+suffixLabel.Font = Enum.Font.GothamBold
+suffixLabel.TextSize = 11
+suffixLabel.TextXAlignment = Enum.TextXAlignment.Left
+suffixLabel.Parent = settingsScroll
+
+local suffixPadding = Instance.new("UIPadding")
+suffixPadding.PaddingLeft = UDim.new(0, 10)
+suffixPadding.Parent = suffixLabel
+
+local suffixFrame = Instance.new("Frame")
+suffixFrame.Size = UDim2.new(1, 0, 0, 0)
+suffixFrame.AutomaticSize = Enum.AutomaticSize.Y
+suffixFrame.BackgroundTransparency = 1
+suffixFrame.Parent = settingsScroll
+
+local suffixGrid = Instance.new("UIGridLayout")
+suffixGrid.Parent = suffixFrame
+suffixGrid.SortOrder = Enum.SortOrder.LayoutOrder
+-- Changed width from 0.5 (50%) to 0.25 (25%) to accommodate 4 columns
+suffixGrid.CellSize = UDim2.new(0.25, -6, 0, 24)
+suffixGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+-- Changed from 2 to 4 cells per row, creating exactly 2 rows for the 8 suffixes
+suffixGrid.FillDirectionMaxCells = 4
+
+local suffixButtons = {}
+
+local function refreshSuffixButtons()
+    for _, btn in ipairs(suffixButtons) do
+        local suffixText = btn.Text:match("%S+%s*$")
+        local suffixName = suffixText and suffixText:gsub("%s*$", "") or ""
+        if selectedSuffixes[suffixName] then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+            btn.Text = "☑ " .. suffixName
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.Text = "☐ " .. suffixName
+        end
+    end
+end
+
+local function createSuffixButton(suffixName)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 60, 0, 24)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = "☑ " .. suffixName
+    btn.AutoButtonColor = false
+    btn.Parent = suffixFrame
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        if selectedSuffixes[suffixName] then
+            selectedSuffixes[suffixName] = false
+            for i, name in ipairs(suffixPriority) do
+                if name == suffixName then
+                    table.remove(suffixPriority, i)
+                    break
+                end
+            end
+        else
+            selectedSuffixes[suffixName] = true
+            table.insert(suffixPriority, suffixName)
+        end
+        refreshSuffixButtons()
+        if refreshSuffixOrderList then
+            refreshSuffixOrderList()
+        end
+    end)
+
+    table.insert(suffixButtons, btn)
+    return btn
+end
+
+for _, suffixName in ipairs(suffixOptions) do
+    createSuffixButton(suffixName)
+end
+
+local suffixOrderLabel = Instance.new("TextLabel")
+suffixOrderLabel.Size = UDim2.new(1, 0, 0, 22)
+suffixOrderLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+suffixOrderLabel.BorderSizePixel = 0
+suffixOrderLabel.Text = "📋 ENDING PRIORITY (TOP IS CHECKED FIRST)"
+suffixOrderLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+suffixOrderLabel.Font = Enum.Font.GothamBold
+suffixOrderLabel.TextSize = 11
+suffixOrderLabel.TextXAlignment = Enum.TextXAlignment.Left
+suffixOrderLabel.Parent = settingsScroll
+
+local suffixOrderPadding = Instance.new("UIPadding")
+suffixOrderPadding.PaddingLeft = UDim.new(0, 10)
+suffixOrderPadding.Parent = suffixOrderLabel
+
+local suffixOrderFrame = Instance.new("Frame")
+suffixOrderFrame.Size = UDim2.new(1, 0, 0, 0)
+suffixOrderFrame.AutomaticSize = Enum.AutomaticSize.Y
+suffixOrderFrame.BackgroundTransparency = 1
+suffixOrderFrame.Parent = settingsScroll
+
+local suffixOrderLayout = Instance.new("UIListLayout")
+suffixOrderLayout.Parent = suffixOrderFrame
+suffixOrderLayout.SortOrder = Enum.SortOrder.LayoutOrder
+suffixOrderLayout.Padding = UDim.new(0, 4)
+
+local suffixOrderRows = {}
+
+local function moveSuffixPriority(index, direction)
+    local newIndex = index + direction
+    if newIndex < 1 or newIndex > #suffixPriority then
+        return
+    end
+    suffixPriority[index], suffixPriority[newIndex] = suffixPriority[newIndex], suffixPriority[index]
+    refreshSuffixOrderList()
+end
+
+refreshSuffixOrderList = function()
+    for _, row in ipairs(suffixOrderRows) do
+        row:Destroy()
+    end
+    suffixOrderRows = {}
+
+    if #suffixPriority == 0 then
+        local emptyLabel = Instance.new("TextLabel")
+        emptyLabel.Size = UDim2.new(1, 0, 0, 22)
+        emptyLabel.BackgroundTransparency = 1
+        emptyLabel.Text = "No suffixes selected"
+        emptyLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+        emptyLabel.Font = Enum.Font.Gotham
+        emptyLabel.TextSize = 10
+        emptyLabel.TextXAlignment = Enum.TextXAlignment.Left
+        emptyLabel.Parent = suffixOrderFrame
+        table.insert(suffixOrderRows, emptyLabel)
+        return
+    end
+
+    for i, suffixName in ipairs(suffixPriority) do
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, 0, 0, 24)
+        row.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        row.BorderSizePixel = 0
+        row.Parent = suffixOrderFrame
+
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 4)
+        rowCorner.Parent = row
+
+        local upBtn = Instance.new("TextButton")
+        upBtn.Size = UDim2.new(0, 24, 1, 0)
+        upBtn.Position = UDim2.new(0, 0, 0, 0)
+        upBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        upBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        upBtn.Font = Enum.Font.GothamBold
+        upBtn.TextSize = 10
+        upBtn.Text = "▲"
+        upBtn.AutoButtonColor = false
+        upBtn.Parent = row
+
+        local downBtn = Instance.new("TextButton")
+        downBtn.Size = UDim2.new(0, 24, 1, 0)
+        downBtn.Position = UDim2.new(0, 26, 0, 0)
+        downBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        downBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        downBtn.Font = Enum.Font.GothamBold
+        downBtn.TextSize = 10
+        downBtn.Text = "▼"
+        downBtn.AutoButtonColor = false
+        downBtn.Parent = row
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -56, 1, 0)
+        nameLabel.Position = UDim2.new(0, 54, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = i .. ". " .. suffixName
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 10
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.Parent = row
+
+        upBtn.MouseButton1Click:Connect(function()
+            moveSuffixPriority(i, -1)
+        end)
+        downBtn.MouseButton1Click:Connect(function()
+            moveSuffixPriority(i, 1)
+        end)
+
+        table.insert(suffixOrderRows, row)
+    end
+end
+
+local suffixLengthButton = Instance.new("TextButton")
+suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
+suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+suffixLengthButton.Font = Enum.Font.GothamBold
+suffixLengthButton.TextSize = 10
+suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
+suffixLengthButton.AutoButtonColor = false
+suffixLengthButton.Parent = settingsScroll
+
+local suffixLengthCorner = Instance.new("UICorner")
+suffixLengthCorner.CornerRadius = UDim.new(0, 5)
+suffixLengthCorner.Parent = suffixLengthButton
+
+local lengthOrderLongestFirst = false
+
+local lengthOrderButton = Instance.new("TextButton")
+lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
+lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+lengthOrderButton.Font = Enum.Font.GothamBold
+lengthOrderButton.TextSize = 10
+lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+lengthOrderButton.AutoButtonColor = false
+lengthOrderButton.Parent = settingsScroll
+
+local lengthOrderCorner = Instance.new("UICorner")
+lengthOrderCorner.CornerRadius = UDim.new(0, 5)
+lengthOrderCorner.Parent = lengthOrderButton
+
+local function refreshSuffixLengthButton()
+    if suffixLengthStrict then
+        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        suffixLengthButton.Text = "⚙️ PRIORITY: LENGTH OVER PREFERRED ENDING"
+    else
+        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
+    end
+end
+
+local function refreshLengthOrderButton()
+    if lengthOrderLongestFirst then
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
+        lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
+    else
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+    end
+end
+
+suffixLengthButton.MouseButton1Click:Connect(function()
+    suffixLengthStrict = not suffixLengthStrict
+    refreshSuffixLengthButton()
+end)
+
+lengthOrderButton.MouseButton1Click:Connect(function()
+    lengthOrderLongestFirst = not lengthOrderLongestFirst
+    refreshLengthOrderButton()
+end)
+
+refreshSuffixButtons()
+refreshSuffixOrderList()
+refreshSuffixLengthButton()
+refreshLengthOrderButton()
+
+-- Update settings canvas size when layout changes
+settingsLayout.Changed:Connect(function()
+    settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
+end)
+
+-- CONTROLS SECTION (moved to settings)
 local controlsSection = Instance.new("Frame")
-controlsSection.Size = UDim2.new(1, 0, 0, 125)
-controlsSection.Position = UDim2.new(0, 0, 0, 32)
-controlsSection.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+controlsSection.Size = UDim2.new(1, 0, 0, 0)
+controlsSection.AutomaticSize = Enum.AutomaticSize.Y
+controlsSection.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 controlsSection.BorderSizePixel = 0
-controlsSection.Parent = mainFrame
+controlsSection.Parent = settingsScroll
 
 -- BUTTON CONTAINER
 local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, -20, 1, 0)
-buttonContainer.Position = UDim2.new(0, 10, 0, 5)
+buttonContainer.Size = UDim2.new(1, 0, 0, 0)
+buttonContainer.AutomaticSize = Enum.AutomaticSize.Y
 buttonContainer.BackgroundTransparency = 1
 buttonContainer.Parent = controlsSection
 
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.Parent = buttonContainer
 buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-buttonLayout.Padding = UDim.new(0, 4)
+buttonLayout.Padding = UDim.new(0, 5)
 
 local function createButton(text, bgColor)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 24)
+    btn.Size = UDim2.new(1, 0, 0, 26)
     btn.BackgroundColor3 = bgColor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
+    btn.TextSize = 10
     btn.Text = text
     btn.Parent = buttonContainer
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 5)
     corner.Parent = btn
     return btn
 end
 
-local modeButton = createButton(" LENGTH: SHORT (9 or less)", Color3.fromRGB(40, 100, 200))
-local suffixButton = createButton(" TARGET SUFFIX: OFF", Color3.fromRGB(150, 50, 50))
-local resetButton = createButton(" RESET BLACKLIST", Color3.fromRGB(200, 60, 60))
+local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200))
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, -159)
-scrollFrame.Position = UDim2.new(0, 0, 0, 159)
+scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+scrollFrame.Position = UDim2.new(0, 0, 0, 0)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
-scrollFrame.CanvasSize = UDim2.new(0, 0, 40, 0)
-scrollFrame.Parent = mainFrame
+scrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+scrollFrame.ElasticBehavior = Enum.ElasticBehavior.Never
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = consolePanel
 
 -- CONSOLE PADDING
 local consolePadding = Instance.new("UIPadding")
 consolePadding.PaddingLeft = UDim.new(0, 10)
 consolePadding.PaddingRight = UDim.new(0, 10)
 consolePadding.PaddingTop = UDim.new(0, 5)
+consolePadding.PaddingBottom = UDim.new(0, 5)
 consolePadding.Parent = scrollFrame
 
 local uiLayout = Instance.new("UIListLayout")
@@ -197,13 +666,22 @@ uiLayout.Parent = scrollFrame
 uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiLayout.Padding = UDim.new(0, 2)
 
--- CONSOLE DIVIDER
-local consoleDivider = Instance.new("Frame")
-consoleDivider.Size = UDim2.new(1, 0, 0, 2)
-consoleDivider.Position = UDim2.new(0, 0, 0, 157)
-consoleDivider.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-consoleDivider.BorderSizePixel = 0
-consoleDivider.Parent = mainFrame
+local function updateConsoleScroll()
+    local paddingY = consolePadding.PaddingTop.Offset + consolePadding.PaddingBottom.Offset
+    local contentHeight = uiLayout.AbsoluteContentSize.Y + paddingY
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    local viewHeight = scrollFrame.AbsoluteWindowSize.Y
+    if viewHeight <= 0 then
+        viewHeight = scrollFrame.AbsoluteSize.Y
+    end
+    if contentHeight > viewHeight then
+        scrollFrame.CanvasPosition = Vector2.new(0, contentHeight - viewHeight)
+    else
+        scrollFrame.CanvasPosition = Vector2.new(0, 0)
+    end
+end
+
+uiLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateConsoleScroll)
 
 local function getStatusIndicator(color)
     if color == Color3.fromRGB(0, 255, 0) then
@@ -300,16 +778,18 @@ local function logMessage(text, color)
     msg.TextXAlignment = Enum.TextXAlignment.Left
     msg.Text = text
     msg.Parent = contentFrame
+
+    task.defer(updateConsoleScroll)
 end
 
-logMessage("System Initialized! Ready to dominate.", Color3.fromRGB(0, 255, 0))
+logMessage("System Initialized! Ready to dominate. [TEST VERSION]", Color3.fromRGB(0, 255, 0))
 updateStatusIndicator()
 
 -- STATES & TOGGLES
 local lengthMode = 1 
 local lengthLabels = {
-    " LENGTH: SHORT (9 or less)",
-    " LENGTH: LONG (10 or more)"
+    " 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)",
+    " 🎯 TARGET LENGTH: LONG (10+ LETTERS)"
 }
 modeButton.MouseButton1Click:Connect(function()
     lengthMode = lengthMode == 1 and 2 or 1
@@ -317,21 +797,58 @@ modeButton.MouseButton1Click:Connect(function()
     logMessage("Switched to " .. lengthLabels[lengthMode], Color3.fromRGB(255, 255, 0))
 end)
 
-local suffixModeEnabled = false
-local defaultSuffixes = {"PT", "UM", "LY", "KY", "X", "Y"}
+local suffixModeEnabled = true
 
-suffixButton.MouseButton1Click:Connect(function()
-    suffixModeEnabled = not suffixModeEnabled
-    if suffixModeEnabled then
-        suffixButton.Text = " TARGET SUFFIX: ON (PT, UM, LY...)"
-        suffixButton.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-        logMessage("Suffix Mode ENABLED", Color3.fromRGB(0, 255, 0))
-    else
-        suffixButton.Text = " TARGET SUFFIX: OFF"
-        suffixButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-        logMessage("Suffix Mode DISABLED", Color3.fromRGB(255, 100, 100))
+local function getSelectedSuffixes()
+    return suffixPriority
+end
+
+local function matchesLengthMode(word)
+    if lengthMode == 1 then
+        return #word <= 9
+    elseif lengthMode == 2 then
+        return #word >= 10
     end
-end)
+    return true
+end
+
+local function pickByLengthOrder(pool)
+    if #pool == 0 then
+        return nil
+    end
+
+    local ranked = {}
+    for _, word in ipairs(pool) do
+        if matchesLengthMode(word) then
+            table.insert(ranked, word)
+        end
+    end
+    if #ranked == 0 then
+        ranked = pool
+    end
+
+    local bestLen = #ranked[1]
+    for _, word in ipairs(ranked) do
+        if lengthOrderLongestFirst then
+            if #word > bestLen then
+                bestLen = #word
+            end
+        else
+            if #word < bestLen then
+                bestLen = #word
+            end
+        end
+    end
+
+    local best = {}
+    for _, word in ipairs(ranked) do
+        if #word == bestLen then
+            table.insert(best, word)
+        end
+    end
+
+    return best[math.random(1, #best)]
+end
 
 -- WORD DB FROM GITHUB
 local wordsTable = {}
@@ -364,7 +881,6 @@ local function clearBlacklist()
     missingPrefixes = {}
     logMessage("--- BLACKLIST CLEARED ---", Color3.fromRGB(255, 255, 0))
 end
-resetButton.MouseButton1Click:Connect(clearBlacklist)
 
 local inGameConnection = localPlayer:GetAttributeChangedSignal("InGame"):Connect(function()
     if localPlayer:GetAttribute("InGame") ~= 2 then
@@ -639,32 +1155,37 @@ task.spawn(function()
                         local finalPool = {}
                         local foundSuffix = false
                         
+                        local activeSuffixes = getSelectedSuffixes()
+                        suffixModeEnabled = (#activeSuffixes > 0)
+                        
                         if suffixModeEnabled then
-                            for _, targetSuffix in ipairs(defaultSuffixes) do
+                            for _, targetSuffix in ipairs(activeSuffixes) do
                                 local exactSuffixMatches = {}
                                 local fallbackSuffixMatches = {}
                                 
                                 for _, word in ipairs(fallbackMatches) do
                                     if string.sub(word, -#targetSuffix) == targetSuffix then
                                         table.insert(fallbackSuffixMatches, word)
-                                    end
-                                end
-                                for _, word in ipairs(exactLengthMatches) do
-                                    if string.sub(word, -#targetSuffix) == targetSuffix then
-                                        table.insert(exactSuffixMatches, word)
+                                        if matchesLengthMode(word) then
+                                            table.insert(exactSuffixMatches, word)
+                                        end
                                     end
                                 end
                                 
-                                if #exactSuffixMatches > 0 then
-                                    finalPool = exactSuffixMatches
-                                    foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."]", Color3.fromRGB(0, 255, 0))
-                                    break
-                                elseif #fallbackSuffixMatches > 0 then
-                                    finalPool = fallbackSuffixMatches
-                                    foundSuffix = true
-                                    logMessage("Matched suffix ["..targetSuffix.."] (Ignored Length)", Color3.fromRGB(200, 200, 0))
-                                    break
+                                if suffixLengthStrict then
+                                    if #exactSuffixMatches > 0 then
+                                        finalPool = exactSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
+                                        break
+                                    end
+                                else
+                                    if #fallbackSuffixMatches > 0 then
+                                        finalPool = fallbackSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
+                                        break
+                                    end
                                 end
                             end
                         end
@@ -677,10 +1198,14 @@ task.spawn(function()
                         end
                         
                         if #finalPool > 0 then
-                            local chosenWord = finalPool[math.random(1, #finalPool)]
+                            local chosenWord = pickByLengthOrder(finalPool)
                             usedWords[chosenWord] = true 
-                            logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                            typeRemainingLetters(chosenWord, #settledPrefix)
+                            if autoAnswerEnabled then
+                                logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
+                                typeRemainingLetters(chosenWord, #settledPrefix)
+                            else
+                                logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
+                            end
                         else
                             logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
                             if not missingPrefixes[settledPrefix] then
