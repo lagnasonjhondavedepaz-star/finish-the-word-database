@@ -546,7 +546,7 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
-local lengthOrderLongestFirst = false
+local lengthOrderMode = 1 -- 1 = Shortest, 2 = Longest, 3 = Random
 
 local lengthOrderButton = Instance.new("TextButton")
 lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
@@ -573,12 +573,15 @@ local function refreshSuffixLengthButton()
 end
 
 local function refreshLengthOrderButton()
-    if lengthOrderLongestFirst then
+    if lengthOrderMode == 1 then
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+    elseif lengthOrderMode == 2 then
         lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
         lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
     else
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
+        lengthOrderButton.Text = "📏 SORT BY: RANDOM WORD"
     end
 end
 
@@ -588,7 +591,10 @@ suffixLengthButton.MouseButton1Click:Connect(function()
 end)
 
 lengthOrderButton.MouseButton1Click:Connect(function()
-    lengthOrderLongestFirst = not lengthOrderLongestFirst
+    lengthOrderMode = lengthOrderMode + 1
+    if lengthOrderMode > 3 then
+        lengthOrderMode = 1
+    end
     refreshLengthOrderButton()
 end)
 
@@ -827,13 +833,18 @@ local function pickByLengthOrder(pool)
         ranked = pool
     end
 
+    -- If Random mode is selected, just pick any word from the valid length pool
+    if lengthOrderMode == 3 then
+        return ranked[math.random(1, #ranked)]
+    end
+
     local bestLen = #ranked[1]
     for _, word in ipairs(ranked) do
-        if lengthOrderLongestFirst then
+        if lengthOrderMode == 2 then -- Longest
             if #word > bestLen then
                 bestLen = #word
             end
-        else
+        else -- Shortest (lengthOrderMode == 1)
             if #word < bestLen then
                 bestLen = #word
             end
