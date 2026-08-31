@@ -1067,8 +1067,8 @@ if #fullWord >= 15 then
         logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
         task.wait(2)
     elseif math.random(1, 100) <= 5 then
-        logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
-        task.wait(4)
+        logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
+        task.wait(3)
     else
         task.wait(math.random(400, 800) / 1000)
     end
