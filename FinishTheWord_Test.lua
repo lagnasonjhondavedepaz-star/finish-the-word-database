@@ -1041,9 +1041,10 @@ local function typeRemainingLetters(fullWord, prefixLength)
     
     if not isRunning then return end
     
-    if willAddEndTypo then
+if willAddEndTypo then
         task.wait(math.random(50, 150) / 1000)
-        local endTypoChars = {"Z", "X"}
+        -- Uses "BackSlash" for the \ key (repeated to maintain the existing random logic)
+        local endTypoChars = {"BackSlash", "BackSlash"}
         local chosenEndTypo = endTypoChars[math.random(1, 2)]
         local endTypoKey = Enum.KeyCode[chosenEndTypo]
         
