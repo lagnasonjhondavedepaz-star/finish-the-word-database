@@ -955,12 +955,10 @@ local function typeRemainingLetters(fullWord, prefixLength)
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
         local severity = math.random(1, 10)
-        if severity <= 5 then
+        if severity <= 6 then
             typosToMake = 1
-        elseif severity <= 8 then
-            typosToMake = 2
         else
-            typosToMake = 3
+            typosToMake = 2
         end
     end
     
@@ -976,14 +974,11 @@ local function typeRemainingLetters(fullWord, prefixLength)
         local keycode = Enum.KeyCode[correctChar]
         
         if i == typoIndex then
-            local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             for t = 1, typosToMake do
                 if not isRunning then break end
+                
+                -- Use the correct character again to simulate an accidental double-press
                 local wrongChar = correctChar
-                while wrongChar == correctChar do
-                    local rIndex = math.random(1, 26)
-                    wrongChar = string.sub(alphabet, rIndex, rIndex)
-                end
                 
                 local wrongKeycode = Enum.KeyCode[wrongChar]
                 if wrongKeycode then
