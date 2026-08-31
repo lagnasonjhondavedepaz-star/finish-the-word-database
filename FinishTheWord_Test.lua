@@ -1067,9 +1067,9 @@ local function typeRemainingLetters(fullWord, prefixLength)
     
     if not isRunning then return end
     
-    if #fullWord >= 15 then
-        logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
-        task.wait(3)
+if #fullWord >= 15 then
+        logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
+        task.wait(2)
     elseif math.random(1, 100) <= 5 then
         logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
         task.wait(4)
