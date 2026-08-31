@@ -1134,18 +1134,44 @@ task.spawn(function()
                         local exactLengthMatches = {}
                         local fallbackMatches = {}
                         
+                        local tryUsedWord = (math.random(1, 100) <= 20)
+                        local usedFallback = {}
+                        local usedExact = {}
+                        
                         for _, word in ipairs(wordsTable) do
-                            if string.sub(word, 1, #settledPrefix) == settledPrefix and not usedWords[word] then
-                                table.insert(fallbackMatches, word)
-                                
+                            if string.sub(word, 1, #settledPrefix) == settledPrefix then
                                 local matchesLength = false
                                 if lengthMode == 1 and #word <= 9 then matchesLength = true end
                                 if lengthMode == 2 and #word >= 10 then matchesLength = true end
                                 
-                                if matchesLength then
-                                    table.insert(exactLengthMatches, word)
+                                if usedWords[word] then
+                                    table.insert(usedFallback, word)
+                                    if matchesLength then
+                                        table.insert(usedExact, word)
+                                    end
+                                else
+                                    table.insert(fallbackMatches, word)
+                                    if matchesLength then
+                                        table.insert(exactLengthMatches, word)
+                                    end
                                 end
                             end
+                        end
+                        
+                        local isPlayingUsedWord = false
+                        if tryUsedWord and #usedFallback > 0 then
+                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
+                            fallbackMatches = usedFallback
+                            exactLengthMatches = usedExact
+                            isPlayingUsedWord = true
+                        end
+                        
+                        local isPlayingUsedWord = false
+                        if tryUsedWord and #usedFallback > 0 then
+                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
+                            fallbackMatches = usedFallback
+                            exactLengthMatches = usedExact
+                            isPlayingUsedWord = true
                         end
                         
                         local finalPool = {}
@@ -1193,12 +1219,19 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-                        if #finalPool > 0 then
+                            if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             usedWords[chosenWord] = true 
                             if autoAnswerEnabled then
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
                                 typeRemainingLetters(chosenWord, #settledPrefix)
+                                
+                                -- If we purposefully played a used word, wait 1s for the game to reject it, 
+                                -- then reset hasPlayedThisTurn so we can type a correct word and not die.
+                                if isPlayingUsedWord then
+                                    task.wait(1)
+                                    hasPlayedThisTurn = false
+                                end
                             else
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
                             end
