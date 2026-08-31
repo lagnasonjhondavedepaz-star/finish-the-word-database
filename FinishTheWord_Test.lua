@@ -287,12 +287,14 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = autoAnswerToggle
 
 local autoAnswerEnabled = true
+local forceReplayThisTurn = false -- Added to track when to retry
 
 autoAnswerToggle.MouseButton1Click:Connect(function()
     autoAnswerEnabled = not autoAnswerEnabled
     if autoAnswerEnabled then
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         autoAnswerToggle.Text = "✓ ENABLED"
+        forceReplayThisTurn = true -- Triggers the script to instantly play the pending word
         logMessage("Auto Answer: ENABLED", Color3.fromRGB(0, 255, 0))
     else
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
@@ -300,6 +302,8 @@ autoAnswerToggle.MouseButton1Click:Connect(function()
         logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
     end
 end)
+
+local usedWords = {}
 
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -1098,6 +1102,12 @@ task.spawn(function()
     local wasMyTurn = false
     
     while isRunning and task.wait(0.1) do
+        -- Reset the turn state if the user just enabled auto-type
+        if forceReplayThisTurn then
+            hasPlayedThisTurn = false
+            forceReplayThisTurn = false
+        end
+        
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
         
@@ -1231,12 +1241,12 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-                            if #finalPool > 0 then
+if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
-                            usedWords[chosenWord] = true 
+                            
                             if autoAnswerEnabled then
+                                usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                                -- Added isPlayingUsedWord to the function call
                                 typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord)
                                 
                                 -- If we purposefully played a used word, wait 1s for the game to reject it, 
