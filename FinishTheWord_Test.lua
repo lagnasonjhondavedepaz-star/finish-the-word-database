@@ -1227,9 +1227,21 @@ task.spawn(function()
                                 typeRemainingLetters(chosenWord, #settledPrefix)
                                 
                                 -- If we purposefully played a used word, wait 1s for the game to reject it, 
-                                -- then reset hasPlayedThisTurn so we can type a correct word and not die.
-                                if isPlayingUsedWord then
+                                -- backspace the letters we added, then reset hasPlayedThisTurn.
+                                    if isPlayingUsedWord then
                                     task.wait(1)
+                                    logMessage("Removing used word to try a valid one...", Color3.fromRGB(255, 100, 255))
+                                    
+                                    local charsToRemove = #chosenWord - #settledPrefix
+                                    for b = 1, charsToRemove do
+                                        if not isRunning then break end
+                                        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                                        task.wait(math.random(30, 60) / 1000) -- Slightly varied hold time
+                                        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                                        task.wait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
+                                    end
+                                    
+                                    task.wait(0.5) -- Wait for the game GUI to process the backspaces
                                     hasPlayedThisTurn = false
                                 end
                             else
