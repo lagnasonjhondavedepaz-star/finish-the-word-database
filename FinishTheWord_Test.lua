@@ -864,7 +864,6 @@ end
 -- WORD DB FROM GITHUB
 local wordsTable = {}
 local validWordsDict = {} 
-local usedWords = {} 
 local missingPrefixes = {} 
 
 local wordUrl = "https://raw.githubusercontent.com/lagnasonjhondavedepaz-star/finish-the-word-database/refs/heads/main/word-notes.txt"
