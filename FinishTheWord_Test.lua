@@ -369,20 +369,25 @@ local forceReplayThisTurn = false -- Added to track when to retry
 
 -- Wakes up the mobile/native keyboard if focus was lost by the auto-typer
 local function restoreKeyboard()
-    local uis = game:GetService("UserInputService")
-    if uis:GetFocusedTextBox() then return end
-    
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    local sg = pGui and pGui:FindFirstChild("ScreenGui")
-    
-    if sg then
-        for _, obj in ipairs(sg:GetDescendants()) do
-            if obj:IsA("TextBox") then
-                obj:CaptureFocus()
-                return
+    task.spawn(function()
+        task.wait(0.1) -- Wait for the button click to finish so it doesn't instantly steal focus back
+        local uis = game:GetService("UserInputService")
+        if uis:GetFocusedTextBox() then return end
+        
+        local pGui = localPlayer:FindFirstChild("PlayerGui")
+        if pGui then
+            -- Search ALL of PlayerGui to guarantee we find the hidden text box
+            for _, obj in ipairs(pGui:GetDescendants()) do
+                if obj:IsA("TextBox") then
+                    obj:CaptureFocus()
+                    -- If we successfully grabbed focus, stop searching
+                    if uis:GetFocusedTextBox() == obj then
+                        return
+                    end
+                end
             end
         end
-    end
+    end)
 end
 
 local function toggleAutoAnswerState()
