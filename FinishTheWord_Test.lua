@@ -421,10 +421,10 @@ local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY", "PT"}
 local selectedSuffixes = {}
 local suffixPriority = {}
 for _, suffix in ipairs(suffixOptions) do
-    selectedSuffixes[suffix] = true
-    table.insert(suffixPriority, suffix)
+    selectedSuffixes[suffix] = false -- Unchecks all suffixes by default[cite: 1]
+    -- table.insert(suffixPriority, suffix) removed so the priority list starts empty[cite: 1]
 end
-local suffixLengthStrict = false
+local suffixLengthStrict = true -- Defaults priority to Length over Preferred Ending[cite: 1]
 local refreshSuffixOrderList
 
 local suffixLabel = Instance.new("TextLabel")
@@ -641,7 +641,7 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
-local lengthOrderMode = 1 -- 1 = Shortest, 2 = Longest, 3 = Random
+local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random (Defaults to Random)[cite: 1]
 
 local lengthOrderButton = Instance.new("TextButton")
 lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
