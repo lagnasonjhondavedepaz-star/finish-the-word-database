@@ -1423,7 +1423,6 @@ if #finalPool > 0 then
                             
                             if autoAnswerEnabled then
                                 pendingManualWord = nil -- Clear it once we decide to play it
-                                usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
                                 currentAction = "Playing: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
