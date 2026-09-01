@@ -13,6 +13,8 @@ screenGui.Parent = coreGui
 
 -- GLOBAL RUN STATE
 local isRunning = true
+local usedWords = {}
+local currentAction = "Waiting..."
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
 screenGui.AncestryChanged:Connect(function(_, parent)
@@ -24,13 +26,20 @@ end)
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
-toggleBtn.Position = UDim2.new(0.5, -50, 0, 12)
+toggleBtn.AnchorPoint = Vector2.new(0.5, 0) -- Keeps it perfectly centered when it expands
+toggleBtn.Position = UDim2.new(0.5, 0, 0, 12)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 11
 toggleBtn.Text = "◉ CONSOLE"
+toggleBtn.AutomaticSize = Enum.AutomaticSize.X -- Allows it to stretch based on text length
 toggleBtn.Parent = screenGui
+
+local togglePadding = Instance.new("UIPadding")
+togglePadding.PaddingLeft = UDim.new(0, 10)
+togglePadding.PaddingRight = UDim.new(0, 10)
+togglePadding.Parent = toggleBtn
 
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
@@ -51,12 +60,16 @@ mainCorner.CornerRadius = UDim.new(0, 12)
 mainCorner.Parent = mainFrame
 
 local function updateToggleButton()
+    local count = 0
+    for _ in pairs(usedWords) do count = count + 1 end
+    
+    local statePrefix = mainFrame.Visible and "◉ CONSOLE" or "○ HIDDEN"
+    toggleBtn.Text = statePrefix .. " | Used: " .. count .. " | " .. currentAction
+    
     if mainFrame.Visible then
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
-        toggleBtn.Text = "◉ CONSOLE"
     else
         toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        toggleBtn.Text = "○ HIDDEN"
     end
 end
 
@@ -311,8 +324,6 @@ autoAnswerToggle.MouseButton1Click:Connect(function()
     end
 end)
 
-local usedWords = {}
-
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
 usedWordsLabel.BackgroundTransparency = 1
@@ -329,6 +340,7 @@ task.spawn(function()
         local count = 0
         for _ in pairs(usedWords) do count = count + 1 end
         usedWordsLabel.Text = "📊 WORDS ALREADY USED: " .. count
+        updateToggleButton() -- ADD THIS LINE
         task.wait(1)
     end
 end)
@@ -1303,12 +1315,14 @@ task.spawn(function()
                             
                             if autoAnswerEnabled then
                                 usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
+                                currentAction = "Playing: " .. chosenWord
+                                updateToggleButton()
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
                                 typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord)
                                 
                                 -- If we purposefully played a used word, wait 1s for the game to reject it, 
                                 -- backspace the letters we added, then reset hasPlayedThisTurn.
-                                    if isPlayingUsedWord then
+                                if isPlayingUsedWord then
                                     task.wait(1)
                                     logMessage("Removing used word to try a valid one...", Color3.fromRGB(255, 100, 255))
                                     
@@ -1325,9 +1339,13 @@ task.spawn(function()
                                     hasPlayedThisTurn = false
                                 end
                             else
+                                currentAction = "Found: " .. chosenWord
+                                updateToggleButton()
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
                             end
                         else
+                            currentAction = "Missing Prefix: " .. settledPrefix
+                            updateToggleButton()
                             logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
                             if not missingPrefixes[settledPrefix] then
                                 missingPrefixes[settledPrefix] = true
