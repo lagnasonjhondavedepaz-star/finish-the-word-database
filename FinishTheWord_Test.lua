@@ -24,18 +24,34 @@ screenGui.AncestryChanged:Connect(function(_, parent)
     end
 end)
 
+-- TOP BUTTONS CONTAINER (Keeps them centered side-by-side)
+local topButtonsContainer = Instance.new("Frame")
+topButtonsContainer.Size = UDim2.new(0, 0, 0, 28)
+topButtonsContainer.Position = UDim2.new(0.5, 0, 0, 12)
+topButtonsContainer.AnchorPoint = Vector2.new(0.5, 0)
+topButtonsContainer.BackgroundTransparency = 1
+topButtonsContainer.AutomaticSize = Enum.AutomaticSize.X
+topButtonsContainer.Parent = screenGui
+
+local topButtonsLayout = Instance.new("UIListLayout")
+topButtonsLayout.Parent = topButtonsContainer
+topButtonsLayout.FillDirection = Enum.FillDirection.Horizontal
+topButtonsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
-toggleBtn.AnchorPoint = Vector2.new(0.5, 0) -- Keeps it perfectly centered when it expands
-toggleBtn.Position = UDim2.new(0.5, 0, 0, 12)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 11
 toggleBtn.Text = "◉ CONSOLE"
-toggleBtn.AutomaticSize = Enum.AutomaticSize.X -- Allows it to stretch based on text length
-toggleBtn.Parent = screenGui
+toggleBtn.AutomaticSize = Enum.AutomaticSize.X
+toggleBtn.LayoutOrder = 1
+toggleBtn.Parent = topButtonsContainer
 
 local togglePadding = Instance.new("UIPadding")
 togglePadding.PaddingLeft = UDim.new(0, 10)
@@ -46,11 +62,9 @@ local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
--- MINI AUTO TOGGLE (Visible only when UI is hidden)
+-- MINI AUTO TOGGLE
 local miniAutoToggleBtn = Instance.new("TextButton")
 miniAutoToggleBtn.Size = UDim2.new(0, 100, 0, 28)
-miniAutoToggleBtn.AnchorPoint = Vector2.new(0.5, 0)
-miniAutoToggleBtn.Position = UDim2.new(0.5, 0, 0, 45) -- Placed just below the main toggle
 miniAutoToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 miniAutoToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 miniAutoToggleBtn.Font = Enum.Font.GothamBold
@@ -58,7 +72,8 @@ miniAutoToggleBtn.TextSize = 11
 miniAutoToggleBtn.Text = "🤖 AUTO: ON"
 miniAutoToggleBtn.AutomaticSize = Enum.AutomaticSize.X
 miniAutoToggleBtn.Visible = false -- Hidden by default
-miniAutoToggleBtn.Parent = screenGui
+miniAutoToggleBtn.LayoutOrder = 2
+miniAutoToggleBtn.Parent = topButtonsContainer
 
 local miniCorner = Instance.new("UICorner")
 miniCorner.CornerRadius = UDim.new(0, 6)
