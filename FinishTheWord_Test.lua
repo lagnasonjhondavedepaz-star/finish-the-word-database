@@ -1499,6 +1499,7 @@ if #finalPool > 0 then
                                 currentAction = "Found: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
+                                restoreKeyboard() -- Wakes up keyboard for manual play on their turn
                             end
                         else
                             pendingManualWord = nil -- Clear it if no words are found
