@@ -335,19 +335,33 @@ toggleCorner.Parent = autoAnswerToggle
 local autoAnswerEnabled = true
 local forceReplayThisTurn = false -- Added to track when to retry
 
-autoAnswerToggle.MouseButton1Click:Connect(function()
+local function toggleAutoAnswerState()
     autoAnswerEnabled = not autoAnswerEnabled
     if autoAnswerEnabled then
+        -- Update main UI toggle
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         autoAnswerToggle.Text = "✓ ENABLED"
+        -- Update mini UI toggle
+        miniAutoToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        miniAutoToggleBtn.Text = "🤖 AUTO: ON"
+        
         forceReplayThisTurn = true -- Triggers the script to instantly play the pending word
         logMessage("Auto Answer: ENABLED", Color3.fromRGB(0, 255, 0))
     else
+        -- Update main UI toggle
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
         autoAnswerToggle.Text = "✗ DISABLED"
+        -- Update mini UI toggle
+        miniAutoToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        miniAutoToggleBtn.Text = "🤖 AUTO: OFF"
+        
         logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
     end
-end)
+end
+
+-- Connect both buttons to the identical function
+autoAnswerToggle.MouseButton1Click:Connect(toggleAutoAnswerState)
+miniAutoToggleBtn.MouseButton1Click:Connect(toggleAutoAnswerState)
 
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
