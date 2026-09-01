@@ -36,6 +36,7 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
+mainFrame.Active = true -- Stops clicks from passing through the UI to the game
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
