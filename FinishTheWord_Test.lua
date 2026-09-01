@@ -367,53 +367,6 @@ toggleCorner.Parent = autoAnswerToggle
 local autoAnswerEnabled = true
 local forceReplayThisTurn = false -- Added to track when to retry
 
--- CACHED CUSTOM KEYBOARD
-local customKeyboardUI = nil
-
--- Hunts down the game's custom GUI keyboard and forces it visible
-local function restoreKeyboard()
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    if not pGui then return end
-    
-    -- Fast path: if we already found the custom keyboard, just force it open
-    if customKeyboardUI and customKeyboardUI.Parent then
-        customKeyboardUI.Visible = true
-        local parentGui = customKeyboardUI:FindFirstAncestorWhichIsA("ScreenGui")
-        if parentGui then parentGui.Enabled = true end
-        return
-    end
-    
-    -- Slow path: search for the custom keyboard frame
-    for _, obj in ipairs(pGui:GetDescendants()) do
-        if obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
-            local name = string.lower(obj.Name)
-            local isKeyboard = string.find(name, "keyboard")
-            
-            -- Fallback: If it's not named "keyboard", check if it has A-Z buttons
-            if not isKeyboard then
-                local buttonCount = 0
-                for _, child in ipairs(obj:GetChildren()) do
-                    if child:IsA("TextButton") or child:IsA("ImageButton") then
-                        buttonCount = buttonCount + 1
-                    end
-                end
-                if buttonCount >= 26 then
-                    isKeyboard = true
-                end
-            end
-            
-            if isKeyboard then
-                customKeyboardUI = obj
-                obj.Visible = true
-                -- Ensure the parent ScreenGui isn't disabled
-                local parentGui = obj:FindFirstAncestorWhichIsA("ScreenGui")
-                if parentGui then parentGui.Enabled = true end
-                return
-            end
-        end
-    end
-end
-
 local function toggleAutoAnswerState()
     autoAnswerEnabled = not autoAnswerEnabled
     if autoAnswerEnabled then
@@ -435,7 +388,6 @@ local function toggleAutoAnswerState()
         miniAutoToggleBtn.Text = "🤖 AUTO: OFF"
         
         logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
-        task.defer(restoreKeyboard) -- Pops up the keyboard instantly for manual typing
     end
 end
 
@@ -1355,11 +1307,6 @@ task.spawn(function()
             end
         end
         
-        -- ENFORCE KEYBOARD VISIBILITY DURING YOUR TURN
-        if isMyTurn then
-            restoreKeyboard()
-        end
-        
         if currentText ~= lastSeenText then
             local isTyping = false
             if currentText ~= "" and lastSeenText ~= "" then
@@ -1533,7 +1480,6 @@ if #finalPool > 0 then
                                 currentAction = "Found: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
-                                restoreKeyboard() -- Wakes up keyboard for manual play on their turn
                             end
                         else
                             pendingManualWord = nil -- Clear it if no words are found
