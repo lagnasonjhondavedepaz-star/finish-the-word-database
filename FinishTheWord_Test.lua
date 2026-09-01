@@ -1252,6 +1252,7 @@ task.spawn(function()
     local hasPlayedThisTurn = false
     local wasMyTurn = false
     local pendingManualWord = nil -- Memory for the manual word
+    local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
     
     while isRunning and task.wait(0.1) do
         -- Reset the turn state if the user just enabled auto-type
@@ -1269,6 +1270,9 @@ task.spawn(function()
                 logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
             end
             wasMyTurn = isMyTurn
+            if isMyTurn then
+                hasTriedUsedWordThisTurn = false -- Reset for the new turn
+            end
         end
         
         if currentText ~= lastSeenText then
@@ -1322,8 +1326,8 @@ task.spawn(function()
                             usedChance = 5
                         end
                         
-                        -- Only attempt a used word if the target length is Short (lengthMode 1)
-                        local tryUsedWord = (lengthMode == 1) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        -- Only attempt a used word if it's short, and we haven't already tried one this turn
+                        local tryUsedWord = (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
                         local usedExact = {}
                         
@@ -1353,14 +1357,7 @@ task.spawn(function()
                             fallbackMatches = usedFallback
                             exactLengthMatches = usedExact
                             isPlayingUsedWord = true
-                        end
-                        
-                        local isPlayingUsedWord = false
-                        if tryUsedWord and #usedFallback > 0 then
-                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
-                            fallbackMatches = usedFallback
-                            exactLengthMatches = usedExact
-                            isPlayingUsedWord = true
+                            hasTriedUsedWordThisTurn = true -- Mark that we tried a used word this turn
                         end
                         
                         local finalPool = {}
