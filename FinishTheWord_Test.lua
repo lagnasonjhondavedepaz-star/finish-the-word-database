@@ -671,9 +671,28 @@ end
 local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200))
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
 
+-- CONSOLE FILTER BUTTON
+local showOnlyMissing = false
+
+local filterBtn = Instance.new("TextButton")
+filterBtn.Size = UDim2.new(1, -20, 0, 24)
+filterBtn.Position = UDim2.new(0, 10, 0, 5)
+filterBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+filterBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+filterBtn.Font = Enum.Font.GothamBold
+filterBtn.TextSize = 10
+filterBtn.Text = "🔍 SHOW ALL LOGS (CLICK TO FILTER MISSING PREFIXES)"
+filterBtn.AutoButtonColor = false
+filterBtn.Parent = consolePanel
+
+local filterCorner = Instance.new("UICorner")
+filterCorner.CornerRadius = UDim.new(0, 4)
+filterCorner.Parent = filterBtn
+
+-- ADJUSTED SCROLL FRAME
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, 0)
-scrollFrame.Position = UDim2.new(0, 0, 0, 0)
+scrollFrame.Size = UDim2.new(1, 0, 1, -34) -- Shrunk slightly to fit button
+scrollFrame.Position = UDim2.new(0, 0, 0, 34) -- Pushed down to fit button
 scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
@@ -713,6 +732,33 @@ end
 
 uiLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateConsoleScroll)
 
+local function applyLogFilter()
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") and child:GetAttribute("IsMissingPrefix") ~= nil then
+            if showOnlyMissing then
+                child.Visible = child:GetAttribute("IsMissingPrefix")
+            else
+                child.Visible = true
+            end
+        end
+    end
+    task.defer(updateConsoleScroll)
+end
+
+filterBtn.MouseButton1Click:Connect(function()
+    showOnlyMissing = not showOnlyMissing
+    if showOnlyMissing then
+        filterBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+        filterBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        filterBtn.Text = "🔍 SHOWING ONLY: MISSING PREFIXES"
+    else
+        filterBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        filterBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        filterBtn.Text = "🔍 SHOW ALL LOGS (CLICK TO FILTER MISSING PREFIXES)"
+    end
+    applyLogFilter()
+end)
+
 local function getStatusIndicator(color)
     if color == Color3.fromRGB(0, 255, 0) then
         return "✓", Color3.fromRGB(0, 255, 100)
@@ -742,6 +788,16 @@ local function logMessage(text, color)
     msgContainer.AutomaticSize = Enum.AutomaticSize.Y
     msgContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     msgContainer.BorderSizePixel = 0
+    
+    -- Tag log if it contains missing prefix warnings
+    local isMissing = (string.find(text, "MISSING PREFIX") ~= nil) or (string.find(text, "Wala ng words") ~= nil)
+    msgContainer:SetAttribute("IsMissingPrefix", isMissing)
+    
+    -- Hide it instantly if the filter is active and it's not a missing prefix
+    if showOnlyMissing and not isMissing then
+        msgContainer.Visible = false
+    end
+    
     msgContainer.Parent = scrollFrame
     
     local msgContainerCorner = Instance.new("UICorner")
