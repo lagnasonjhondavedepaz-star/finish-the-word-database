@@ -45,6 +45,29 @@ local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
+-- MINI AUTO TOGGLE (Visible only when UI is hidden)
+local miniAutoToggleBtn = Instance.new("TextButton")
+miniAutoToggleBtn.Size = UDim2.new(0, 100, 0, 28)
+miniAutoToggleBtn.AnchorPoint = Vector2.new(0.5, 0)
+miniAutoToggleBtn.Position = UDim2.new(0.5, 0, 0, 45) -- Placed just below the main toggle
+miniAutoToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+miniAutoToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniAutoToggleBtn.Font = Enum.Font.GothamBold
+miniAutoToggleBtn.TextSize = 11
+miniAutoToggleBtn.Text = "🤖 AUTO: ON"
+miniAutoToggleBtn.AutomaticSize = Enum.AutomaticSize.X
+miniAutoToggleBtn.Visible = false -- Hidden by default
+miniAutoToggleBtn.Parent = screenGui
+
+local miniCorner = Instance.new("UICorner")
+miniCorner.CornerRadius = UDim.new(0, 6)
+miniCorner.Parent = miniAutoToggleBtn
+
+local miniPadding = Instance.new("UIPadding")
+miniPadding.PaddingLeft = UDim.new(0, 10)
+miniPadding.PaddingRight = UDim.new(0, 10)
+miniPadding.Parent = miniAutoToggleBtn
+
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0.55, 0, 0.75, 0)
 mainFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
@@ -68,8 +91,10 @@ local function updateToggleButton()
     
     if mainFrame.Visible then
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+        miniAutoToggleBtn.Visible = false -- Hide mini toggle when console is open
     else
         toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        miniAutoToggleBtn.Visible = true  -- Show mini toggle when console is closed
     end
 end
 
