@@ -1160,15 +1160,19 @@ task.spawn(function()
                         local usedCount = 0
                         for _ in pairs(usedWords) do usedCount = usedCount + 1 end
                         
-                        local usedChance = 10
-                        if usedCount >= 75 then
+                        local usedChance = 0
+                        if usedCount > 100 then
                             usedChance = 20
-                        elseif usedCount >= 50 then
+                        elseif usedCount > 75 then
                             usedChance = 15
+                        elseif usedCount > 50 then
+                            usedChance = 10
+                        elseif usedCount > 25 then
+                            usedChance = 5
                         end
                         
                         -- Only attempt a used word if the target length is Short (lengthMode 1)
-                        local tryUsedWord = (lengthMode == 1) and (math.random(1, 100) <= usedChance)
+                        local tryUsedWord = (lengthMode == 1) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
                         local usedExact = {}
                         
