@@ -1099,7 +1099,7 @@ local function logMessage(text, color)
     task.defer(updateConsoleScroll)
 end
 
-logMessage("System Initialized! Ready to dominate. [TEST VERSION]", Color3.fromRGB(0, 255, 0))
+logMessage("System Initialized! Ready to dominate. [BETA VERSION]", Color3.fromRGB(0, 255, 0))
 updateStatusIndicator()
 
 local suffixModeEnabled = true
