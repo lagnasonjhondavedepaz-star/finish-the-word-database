@@ -458,6 +458,49 @@ end
 local suffixLengthStrict = true -- Defaults priority to Length over Preferred Ending[cite: 1]
 local refreshSuffixOrderList
 
+-- CUSTOM SUFFIX UI
+local customSuffixValue = ""
+
+local customSuffixContainer = Instance.new("Frame")
+customSuffixContainer.Size = UDim2.new(1, 0, 0, 34)
+customSuffixContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+customSuffixContainer.BorderSizePixel = 0
+customSuffixContainer.Parent = settingsScroll
+
+local customSuffixTitle = Instance.new("TextLabel")
+customSuffixTitle.Size = UDim2.new(0.5, 0, 1, 0)
+customSuffixTitle.BackgroundTransparency = 1
+customSuffixTitle.Text = "✍️ CUSTOM SUFFIX:"
+customSuffixTitle.TextColor3 = Color3.fromRGB(0, 255, 150)
+customSuffixTitle.Font = Enum.Font.GothamBold
+customSuffixTitle.TextSize = 10
+customSuffixTitle.TextXAlignment = Enum.TextXAlignment.Left
+customSuffixTitle.Parent = customSuffixContainer
+
+local customTitlePadding = Instance.new("UIPadding")
+customTitlePadding.PaddingLeft = UDim.new(0, 10)
+customTitlePadding.Parent = customSuffixTitle
+
+local customSuffixInput = Instance.new("TextBox")
+customSuffixInput.Size = UDim2.new(0.5, -10, 0, 24)
+customSuffixInput.Position = UDim2.new(0.5, 0, 0.5, -12)
+customSuffixInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+customSuffixInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+customSuffixInput.Font = Enum.Font.GothamBold
+customSuffixInput.TextSize = 10
+customSuffixInput.PlaceholderText = "Enter suffix..."
+customSuffixInput.Text = ""
+customSuffixInput.Parent = customSuffixContainer
+
+local customInputCorner = Instance.new("UICorner")
+customInputCorner.CornerRadius = UDim.new(0, 4)
+customInputCorner.Parent = customSuffixInput
+
+customSuffixInput.FocusLost:Connect(function()
+    customSuffixValue = customSuffixInput.Text:upper():match("^[%a]*") or ""
+    customSuffixInput.Text = customSuffixValue
+end)
+
 local suffixLabel = Instance.new("TextLabel")
 suffixLabel.Size = UDim2.new(1, 0, 0, 22)
 suffixLabel.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
@@ -833,10 +876,11 @@ usedWordsLabel.LayoutOrder = 3
 priorityContainer.LayoutOrder = 4
 sortContainer.LayoutOrder = 5
 targetLengthContainer.LayoutOrder = 6
-suffixLabel.LayoutOrder = 7
-suffixFrame.LayoutOrder = 8
-suffixOrderLabel.LayoutOrder = 9
-suffixOrderFrame.LayoutOrder = 10
+customSuffixContainer.LayoutOrder = 7
+suffixLabel.LayoutOrder = 8
+suffixFrame.LayoutOrder = 9
+suffixOrderLabel.LayoutOrder = 10
+suffixOrderFrame.LayoutOrder = 11
 
 local function createButton(text, bgColor, layoutOrder)
     local btn = Instance.new("TextButton")
@@ -1061,7 +1105,19 @@ updateStatusIndicator()
 local suffixModeEnabled = true
 
 local function getSelectedSuffixes()
-    return suffixPriority
+    local list = {}
+    
+    -- Custom Suffix is always placed first in the hierarchy if it is not empty
+    if customSuffixValue and customSuffixValue ~= "" then
+        table.insert(list, customSuffixValue)
+    end
+    
+    -- Then append the standard checked suffixes from your order list
+    for _, suffix in ipairs(suffixPriority) do
+        table.insert(list, suffix)
+    end
+    
+    return list
 end
 
 local function matchesLengthMode(word)
