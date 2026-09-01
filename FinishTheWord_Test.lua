@@ -395,6 +395,54 @@ end
 autoAnswerToggle.MouseButton1Click:Connect(toggleAutoAnswerState)
 miniAutoToggleBtn.MouseButton1Click:Connect(toggleAutoAnswerState)
 
+-- Trying Used Words Toggle
+local tryUsedWordContainer = Instance.new("Frame")
+tryUsedWordContainer.Size = UDim2.new(1, 0, 0, 34)
+tryUsedWordContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+tryUsedWordContainer.BorderSizePixel = 0
+tryUsedWordContainer.Parent = settingsScroll
+
+local tryUsedWordLabel = Instance.new("TextLabel")
+tryUsedWordLabel.Size = UDim2.new(1, -110, 1, 0)
+tryUsedWordLabel.BackgroundTransparency = 1
+tryUsedWordLabel.Text = "🧠 TRY USED WORDS (SHORT ONLY)"
+tryUsedWordLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+tryUsedWordLabel.Font = Enum.Font.GothamBold
+tryUsedWordLabel.TextSize = 10
+tryUsedWordLabel.TextXAlignment = Enum.TextXAlignment.Left
+tryUsedWordLabel.Parent = tryUsedWordContainer
+
+local tryUsedWordPadding = Instance.new("UIPadding")
+tryUsedWordPadding.PaddingLeft = UDim.new(0, 10)
+tryUsedWordPadding.Parent = tryUsedWordLabel
+
+local tryUsedWordToggle = Instance.new("TextButton")
+tryUsedWordToggle.Size = UDim2.new(0, 100, 0, 26)
+tryUsedWordToggle.Position = UDim2.new(1, -106, 0.5, -13)
+tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+tryUsedWordToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+tryUsedWordToggle.Font = Enum.Font.GothamBold
+tryUsedWordToggle.TextSize = 11
+tryUsedWordToggle.Text = "✓ ENABLED"
+tryUsedWordToggle.Parent = tryUsedWordContainer
+
+local tryUsedWordCorner = Instance.new("UICorner")
+tryUsedWordCorner.CornerRadius = UDim.new(0, 6)
+tryUsedWordCorner.Parent = tryUsedWordToggle
+
+local tryUsedWordsEnabled = true
+
+tryUsedWordToggle.MouseButton1Click:Connect(function()
+    tryUsedWordsEnabled = not tryUsedWordsEnabled
+    if tryUsedWordsEnabled then
+        tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        tryUsedWordToggle.Text = "✓ ENABLED"
+    else
+        tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        tryUsedWordToggle.Text = "✗ DISABLED"
+    end
+end)
+
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
 usedWordsLabel.BackgroundTransparency = 1
@@ -641,22 +689,30 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
-local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random (Defaults to Random)[cite: 1]
+local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random
 
-local lengthOrderButton = Instance.new("TextButton")
-lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
-lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-lengthOrderButton.Font = Enum.Font.GothamBold
-lengthOrderButton.TextSize = 10
-lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
-lengthOrderButton.AutoButtonColor = false
-lengthOrderButton.Parent = settingsScroll
+local function createSortButton(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 28)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.Parent = settingsScroll
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
+end
 
-local lengthOrderCorner = Instance.new("UICorner")
-lengthOrderCorner.CornerRadius = UDim.new(0, 5)
-lengthOrderCorner.Parent = lengthOrderButton
+local sortShortestBtn = createSortButton("📏 SORT BY: SHORTEST WORD FIRST")
+local sortLongestBtn = createSortButton("📏 SORT BY: LONGEST WORD FIRST")
+local sortRandomBtn = createSortButton("📏 SORT BY: RANDOM WORD")
 
+-- KEPT INTACT: Priority Button Logic
 local function refreshSuffixLengthButton()
     if suffixLengthStrict then
         suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
@@ -667,36 +723,29 @@ local function refreshSuffixLengthButton()
     end
 end
 
-local function refreshLengthOrderButton()
-    if lengthOrderMode == 1 then
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
-    elseif lengthOrderMode == 2 then
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
-    else
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
-        lengthOrderButton.Text = "📏 SORT BY: RANDOM WORD"
-    end
+-- NEW: Sort Button Logic
+local function refreshSortButtons()
+    sortShortestBtn.BackgroundColor3 = (lengthOrderMode == 1) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    sortLongestBtn.BackgroundColor3 = (lengthOrderMode == 2) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    sortRandomBtn.BackgroundColor3 = (lengthOrderMode == 3) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
 end
 
+-- KEPT INTACT: Priority Button Click
 suffixLengthButton.MouseButton1Click:Connect(function()
     suffixLengthStrict = not suffixLengthStrict
     refreshSuffixLengthButton()
 end)
 
-lengthOrderButton.MouseButton1Click:Connect(function()
-    lengthOrderMode = lengthOrderMode + 1
-    if lengthOrderMode > 3 then
-        lengthOrderMode = 1
-    end
-    refreshLengthOrderButton()
-end)
+-- NEW: Sort Button Clicks
+sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refreshSortButtons() end)
+sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
+sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
 
+-- INITIALIZE UI
 refreshSuffixButtons()
 refreshSuffixOrderList()
 refreshSuffixLengthButton()
-refreshLengthOrderButton()
+refreshSortButtons()
 
 -- Update settings canvas size when layout changes
 settingsLayout.Changed:Connect(function()
@@ -705,14 +754,17 @@ end)
 
 -- ASSIGN EXPLICIT LAYOUT ORDERS TO REORDER THE SETTINGS
 autoAnswerContainer.LayoutOrder = 1
-usedWordsLabel.LayoutOrder = 2
-suffixLengthButton.LayoutOrder = 3
-lengthOrderButton.LayoutOrder = 4
--- LayoutOrder 5 is reserved for modeButton below
-suffixLabel.LayoutOrder = 6
-suffixFrame.LayoutOrder = 7
-suffixOrderLabel.LayoutOrder = 8
-suffixOrderFrame.LayoutOrder = 9
+tryUsedWordContainer.LayoutOrder = 2
+usedWordsLabel.LayoutOrder = 3
+suffixLengthButton.LayoutOrder = 4
+sortShortestBtn.LayoutOrder = 5
+sortLongestBtn.LayoutOrder = 6
+sortRandomBtn.LayoutOrder = 7
+-- LayoutOrder 8 is reserved for modeButton below
+suffixLabel.LayoutOrder = 9
+suffixFrame.LayoutOrder = 10
+suffixOrderLabel.LayoutOrder = 11
+suffixOrderFrame.LayoutOrder = 12
 
 local function createButton(text, bgColor, layoutOrder)
     local btn = Instance.new("TextButton")
@@ -731,8 +783,8 @@ local function createButton(text, bgColor, layoutOrder)
     return btn
 end
 
-local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 5)
-local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 10)
+local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 8)
+local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 
 -- CONSOLE FILTER BUTTON
 local showOnlyMissing = false
@@ -1350,8 +1402,8 @@ task.spawn(function()
                             usedChance = 5
                         end
                         
-                        -- Only attempt a used word if it's short, and we haven't already tried one this turn
-                        local tryUsedWord = (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        -- Only attempt a used word if ENABLED, it's short, and we haven't already tried one this turn
+                        local tryUsedWord = tryUsedWordsEnabled and (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
                         local usedExact = {}
                         
