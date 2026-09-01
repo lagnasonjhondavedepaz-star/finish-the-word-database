@@ -14,6 +14,13 @@ screenGui.Parent = coreGui
 -- GLOBAL RUN STATE
 local isRunning = true
 
+-- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
+screenGui.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        isRunning = false
+    end
+end)
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
@@ -36,6 +43,7 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
+mainFrame.Active = true -- Stops clicks from passing through the UI to the game
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -287,12 +295,14 @@ toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = autoAnswerToggle
 
 local autoAnswerEnabled = true
+local forceReplayThisTurn = false -- Added to track when to retry
 
 autoAnswerToggle.MouseButton1Click:Connect(function()
     autoAnswerEnabled = not autoAnswerEnabled
     if autoAnswerEnabled then
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         autoAnswerToggle.Text = "✓ ENABLED"
+        forceReplayThisTurn = true -- Triggers the script to instantly play the pending word
         logMessage("Auto Answer: ENABLED", Color3.fromRGB(0, 255, 0))
     else
         autoAnswerToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
@@ -300,6 +310,8 @@ autoAnswerToggle.MouseButton1Click:Connect(function()
         logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
     end
 end)
+
+local usedWords = {}
 
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -546,7 +558,7 @@ local suffixLengthCorner = Instance.new("UICorner")
 suffixLengthCorner.CornerRadius = UDim.new(0, 5)
 suffixLengthCorner.Parent = suffixLengthButton
 
-local lengthOrderLongestFirst = false
+local lengthOrderMode = 1 -- 1 = Shortest, 2 = Longest, 3 = Random
 
 local lengthOrderButton = Instance.new("TextButton")
 lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
@@ -573,12 +585,15 @@ local function refreshSuffixLengthButton()
 end
 
 local function refreshLengthOrderButton()
-    if lengthOrderLongestFirst then
+    if lengthOrderMode == 1 then
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+    elseif lengthOrderMode == 2 then
         lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
         lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
     else
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
+        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
+        lengthOrderButton.Text = "📏 SORT BY: RANDOM WORD"
     end
 end
 
@@ -588,7 +603,10 @@ suffixLengthButton.MouseButton1Click:Connect(function()
 end)
 
 lengthOrderButton.MouseButton1Click:Connect(function()
-    lengthOrderLongestFirst = not lengthOrderLongestFirst
+    lengthOrderMode = lengthOrderMode + 1
+    if lengthOrderMode > 3 then
+        lengthOrderMode = 1
+    end
     refreshLengthOrderButton()
 end)
 
@@ -827,13 +845,18 @@ local function pickByLengthOrder(pool)
         ranked = pool
     end
 
+    -- If Random mode is selected, just pick any word from the valid length pool
+    if lengthOrderMode == 3 then
+        return ranked[math.random(1, #ranked)]
+    end
+
     local bestLen = #ranked[1]
     for _, word in ipairs(ranked) do
-        if lengthOrderLongestFirst then
+        if lengthOrderMode == 2 then -- Longest
             if #word > bestLen then
                 bestLen = #word
             end
-        else
+        else -- Shortest (lengthOrderMode == 1)
             if #word < bestLen then
                 bestLen = #word
             end
@@ -853,7 +876,6 @@ end
 -- WORD DB FROM GITHUB
 local wordsTable = {}
 local validWordsDict = {} 
-local usedWords = {} 
 local missingPrefixes = {} 
 
 local wordUrl = "https://raw.githubusercontent.com/lagnasonjhondavedepaz-star/finish-the-word-database/refs/heads/main/word-notes.txt"
@@ -920,7 +942,8 @@ local function readInputBox()
     return fullText
 end
 
-local function typeRemainingLetters(fullWord, prefixLength)
+-- Added a 3rd parameter: isPlayingUsedWord
+local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
     local willStartDelay = false
@@ -947,20 +970,19 @@ local function typeRemainingLetters(fullWord, prefixLength)
         typoRate = 45
     end
     
-    local willMakeTypo = (math.random(1, 100) <= typoRate)
+    -- Disabled typos if isPlayingUsedWord is true
+    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
-    local typosToMake = 1
-    local willAddEndTypo = (math.random(1, 100) <= 10) 
+    local typoType = 1
+    local willAddEndTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= 10) 
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
-        local severity = math.random(1, 10)
-        if severity <= 5 then
-            typosToMake = 1
-        elseif severity <= 8 then
-            typosToMake = 2
+        -- 50% chance for Double-Press Correct Letter, 50% chance for Random Wrong Letter
+        if math.random(1, 100) <= 50 then
+            typoType = 1
         else
-            typosToMake = 3
+            typoType = 2
         end
     end
     
@@ -974,11 +996,38 @@ local function typeRemainingLetters(fullWord, prefixLength)
         
         local correctChar = string.sub(suffix, i, i)
         local keycode = Enum.KeyCode[correctChar]
+        local skipNormalTyping = false
         
         if i == typoIndex then
-            local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            for t = 1, typosToMake do
-                if not isRunning then break end
+            if typoType == 1 then
+                -- TYPE 1: Double press the correct character (Types 2 total, backspaces 1)
+                for t = 1, 2 do
+                    if not isRunning then break end
+                    local wrongKeycode = Enum.KeyCode[correctChar]
+                    if wrongKeycode then
+                        VIM:SendKeyEvent(true, wrongKeycode, false, game)
+                        task.wait(math.random(20, 50) / 1000) 
+                        VIM:SendKeyEvent(false, wrongKeycode, false, game)
+                        task.wait(math.random(60, 150) / 1000)
+                    end
+                end
+                
+                task.wait(math.random(250, 500) / 1000)
+                
+                if isRunning then
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(20, 40) / 1000)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(80, 150) / 1000)
+                end
+                
+                task.wait(math.random(150, 250) / 1000)
+                currentStreak = 0 
+                skipNormalTyping = true 
+                
+            elseif typoType == 2 then
+                -- TYPE 2: Random incorrect character (Types 1 wrong, backspaces 1)
+                local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 local wrongChar = correctChar
                 while wrongChar == correctChar do
                     local rIndex = math.random(1, 26)
@@ -986,29 +1035,29 @@ local function typeRemainingLetters(fullWord, prefixLength)
                 end
                 
                 local wrongKeycode = Enum.KeyCode[wrongChar]
-                if wrongKeycode then
+                if wrongKeycode and isRunning then
                     VIM:SendKeyEvent(true, wrongKeycode, false, game)
                     task.wait(math.random(20, 50) / 1000) 
                     VIM:SendKeyEvent(false, wrongKeycode, false, game)
                     task.wait(math.random(60, 150) / 1000)
                 end
+                
+                task.wait(math.random(250, 500) / 1000)
+                
+                if isRunning then
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(20, 40) / 1000)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(80, 150) / 1000)
+                end
+                
+                task.wait(math.random(150, 250) / 1000)
+                currentStreak = 0 
+                skipNormalTyping = false 
             end
-            
-            task.wait(math.random(250, 500) / 1000)
-            
-            for t = 1, typosToMake do
-                if not isRunning then break end
-                VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                task.wait(math.random(20, 40) / 1000)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                task.wait(math.random(80, 150) / 1000)
-            end
-            
-            task.wait(math.random(150, 250) / 1000)
-            currentStreak = 0 
         end
         
-        if keycode and isRunning then
+        if not skipNormalTyping and keycode and isRunning then
             VIM:SendKeyEvent(true, keycode, false, game)
             task.wait(math.random(20, 50) / 1000) 
             VIM:SendKeyEvent(false, keycode, false, game)
@@ -1041,9 +1090,10 @@ local function typeRemainingLetters(fullWord, prefixLength)
     
     if not isRunning then return end
     
-    if willAddEndTypo then
+if willAddEndTypo then
         task.wait(math.random(50, 150) / 1000)
-        local endTypoChars = {"Z", "X"}
+        -- Uses "BackSlash" for the \ key (repeated to maintain the existing random logic)
+        local endTypoChars = {"BackSlash", "BackSlash"}
         local chosenEndTypo = endTypoChars[math.random(1, 2)]
         local endTypoKey = Enum.KeyCode[chosenEndTypo]
         
@@ -1051,7 +1101,11 @@ local function typeRemainingLetters(fullWord, prefixLength)
         task.wait(math.random(20, 50) / 1000)
         VIM:SendKeyEvent(false, endTypoKey, false, game)
         
-        task.wait(math.random(100, 250) / 1000)
+        -- 50% chance to wait 100-250ms, otherwise no delay before hitting Return
+        if math.random(1, 100) <= 50 then
+            task.wait(math.random(100, 250) / 1000)
+        end
+        
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
         task.wait(0.05)
         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
@@ -1067,12 +1121,12 @@ local function typeRemainingLetters(fullWord, prefixLength)
     
     if not isRunning then return end
     
-    if #fullWord >= 15 then
-        logMessage("15+ letters! Waiting 3 seconds before enter...", Color3.fromRGB(255, 255, 0))
+if #fullWord >= 15 then
+        logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
+        task.wait(2)
+    elseif (not willAddEndTypo) and math.random(1, 100) <= 5 then
+        logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
         task.wait(3)
-    elseif math.random(1, 100) <= 5 then
-        logMessage("Distracted! Waiting 4 seconds...", Color3.fromRGB(255, 150, 0))
-        task.wait(4)
     else
         task.wait(math.random(400, 800) / 1000)
     end
@@ -1090,6 +1144,12 @@ task.spawn(function()
     local wasMyTurn = false
     
     while isRunning and task.wait(0.1) do
+        -- Reset the turn state if the user just enabled auto-type
+        if forceReplayThisTurn then
+            hasPlayedThisTurn = false
+            forceReplayThisTurn = false
+        end
+        
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
         
@@ -1138,18 +1198,59 @@ task.spawn(function()
                         local exactLengthMatches = {}
                         local fallbackMatches = {}
                         
+                        local usedCount = 0
+                        for _ in pairs(usedWords) do usedCount = usedCount + 1 end
+                        
+                        local usedChance = 0
+                        if usedCount > 100 then
+                            usedChance = 20
+                        elseif usedCount > 75 then
+                            usedChance = 15
+                        elseif usedCount > 50 then
+                            usedChance = 10
+                        elseif usedCount > 25 then
+                            usedChance = 5
+                        end
+                        
+                        -- Only attempt a used word if the target length is Short (lengthMode 1)
+                        local tryUsedWord = (lengthMode == 1) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        local usedFallback = {}
+                        local usedExact = {}
+                        
                         for _, word in ipairs(wordsTable) do
-                            if string.sub(word, 1, #settledPrefix) == settledPrefix and not usedWords[word] then
-                                table.insert(fallbackMatches, word)
-                                
+                            if string.sub(word, 1, #settledPrefix) == settledPrefix then
                                 local matchesLength = false
                                 if lengthMode == 1 and #word <= 9 then matchesLength = true end
                                 if lengthMode == 2 and #word >= 10 then matchesLength = true end
                                 
-                                if matchesLength then
-                                    table.insert(exactLengthMatches, word)
+                                if usedWords[word] then
+                                    table.insert(usedFallback, word)
+                                    if matchesLength then
+                                        table.insert(usedExact, word)
+                                    end
+                                else
+                                    table.insert(fallbackMatches, word)
+                                    if matchesLength then
+                                        table.insert(exactLengthMatches, word)
+                                    end
                                 end
                             end
+                        end
+                        
+                        local isPlayingUsedWord = false
+                        if tryUsedWord and #usedFallback > 0 then
+                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
+                            fallbackMatches = usedFallback
+                            exactLengthMatches = usedExact
+                            isPlayingUsedWord = true
+                        end
+                        
+                        local isPlayingUsedWord = false
+                        if tryUsedWord and #usedFallback > 0 then
+                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
+                            fallbackMatches = usedFallback
+                            exactLengthMatches = usedExact
+                            isPlayingUsedWord = true
                         end
                         
                         local finalPool = {}
@@ -1197,12 +1298,32 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-                        if #finalPool > 0 then
+                            if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
-                            usedWords[chosenWord] = true 
+                            
                             if autoAnswerEnabled then
+                                usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                                typeRemainingLetters(chosenWord, #settledPrefix)
+                                typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord)
+                                
+                                -- If we purposefully played a used word, wait 1s for the game to reject it, 
+                                -- backspace the letters we added, then reset hasPlayedThisTurn.
+                                    if isPlayingUsedWord then
+                                    task.wait(1)
+                                    logMessage("Removing used word to try a valid one...", Color3.fromRGB(255, 100, 255))
+                                    
+                                    local charsToRemove = #chosenWord - #settledPrefix
+                                    for b = 1, charsToRemove do
+                                        if not isRunning then break end
+                                        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                                        task.wait(math.random(30, 60) / 1000) -- Slightly varied hold time
+                                        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                                        task.wait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
+                                    end
+                                    
+                                    task.wait(0.5) -- Wait for the game GUI to process the backspaces
+                                    hasPlayedThisTurn = false
+                                end
                             else
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
                             end
