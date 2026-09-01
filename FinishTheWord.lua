@@ -913,6 +913,8 @@ end
 local function clearBlacklist()
     usedWords = {}
     missingPrefixes = {}
+    currentAction = "Waiting..." -- Resets the status text
+    updateToggleButton()         -- Refreshes the UI button instantly
     logMessage("--- BLACKLIST CLEARED ---", Color3.fromRGB(255, 255, 0))
 end
 
