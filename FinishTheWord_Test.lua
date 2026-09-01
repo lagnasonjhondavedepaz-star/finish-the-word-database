@@ -1064,7 +1064,11 @@ if willAddEndTypo then
         task.wait(math.random(20, 50) / 1000)
         VIM:SendKeyEvent(false, endTypoKey, false, game)
         
-        task.wait(math.random(100, 250) / 1000)
+        -- 50% chance to wait 100-250ms, otherwise no delay before hitting Return
+        if math.random(1, 100) <= 50 then
+            task.wait(math.random(100, 250) / 1000)
+        end
+        
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
         task.wait(0.05)
         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
