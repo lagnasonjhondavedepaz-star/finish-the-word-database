@@ -966,16 +966,16 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     -- Disabled typos if isPlayingUsedWord is true
     local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
-    local typosToMake = 1
+    local typoType = 1
     local willAddEndTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= 10) 
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
-        local severity = math.random(1, 10)
-        if severity <= 6 then
-            typosToMake = 1
+        -- 50% chance for Double-Press Correct Letter, 50% chance for Random Wrong Letter
+        if math.random(1, 100) <= 50 then
+            typoType = 1
         else
-            typosToMake = 2
+            typoType = 2
         end
     end
     
@@ -989,38 +989,68 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
         local correctChar = string.sub(suffix, i, i)
         local keycode = Enum.KeyCode[correctChar]
+        local skipNormalTyping = false
         
         if i == typoIndex then
-            for t = 1, typosToMake do
-                if not isRunning then break end
+            if typoType == 1 then
+                -- TYPE 1: Double press the correct character (Types 2 total, backspaces 1)
+                for t = 1, 2 do
+                    if not isRunning then break end
+                    local wrongKeycode = Enum.KeyCode[correctChar]
+                    if wrongKeycode then
+                        VIM:SendKeyEvent(true, wrongKeycode, false, game)
+                        task.wait(math.random(20, 50) / 1000) 
+                        VIM:SendKeyEvent(false, wrongKeycode, false, game)
+                        task.wait(math.random(60, 150) / 1000)
+                    end
+                end
                 
-                -- Use the correct character again to simulate an accidental double-press
+                task.wait(math.random(250, 500) / 1000)
+                
+                if isRunning then
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(20, 40) / 1000)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(80, 150) / 1000)
+                end
+                
+                task.wait(math.random(150, 250) / 1000)
+                currentStreak = 0 
+                skipNormalTyping = true 
+                
+            elseif typoType == 2 then
+                -- TYPE 2: Random incorrect character (Types 1 wrong, backspaces 1)
+                local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 local wrongChar = correctChar
+                while wrongChar == correctChar do
+                    local rIndex = math.random(1, 26)
+                    wrongChar = string.sub(alphabet, rIndex, rIndex)
+                end
                 
                 local wrongKeycode = Enum.KeyCode[wrongChar]
-                if wrongKeycode then
+                if wrongKeycode and isRunning then
                     VIM:SendKeyEvent(true, wrongKeycode, false, game)
                     task.wait(math.random(20, 50) / 1000) 
                     VIM:SendKeyEvent(false, wrongKeycode, false, game)
                     task.wait(math.random(60, 150) / 1000)
                 end
+                
+                task.wait(math.random(250, 500) / 1000)
+                
+                if isRunning then
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(20, 40) / 1000)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                    task.wait(math.random(80, 150) / 1000)
+                end
+                
+                task.wait(math.random(150, 250) / 1000)
+                currentStreak = 0 
+                skipNormalTyping = false 
             end
-            
-            task.wait(math.random(250, 500) / 1000)
-            
-            for t = 1, typosToMake do
-                if not isRunning then break end
-                VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                task.wait(math.random(20, 40) / 1000)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                task.wait(math.random(80, 150) / 1000)
-            end
-            
-            task.wait(math.random(150, 250) / 1000)
-            currentStreak = 0 
         end
         
-        if keycode and isRunning then
+        if not skipNormalTyping and keycode and isRunning then
             VIM:SendKeyEvent(true, keycode, false, game)
             task.wait(math.random(20, 50) / 1000) 
             VIM:SendKeyEvent(false, keycode, false, game)
