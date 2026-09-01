@@ -1251,6 +1251,7 @@ task.spawn(function()
     local lastSeenText = ""
     local hasPlayedThisTurn = false
     local wasMyTurn = false
+    local pendingManualWord = nil -- Memory for the manual word
     
     while isRunning and task.wait(0.1) do
         -- Reset the turn state if the user just enabled auto-type
@@ -1407,10 +1408,21 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-                            if #finalPool > 0 then
+if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             
+                            -- Prevent the word from changing if we already found one in manual mode
+                            if pendingManualWord and string.sub(pendingManualWord, 1, #settledPrefix) == settledPrefix then
+                                for _, w in ipairs(finalPool) do
+                                    if w == pendingManualWord then
+                                        chosenWord = pendingManualWord
+                                        break
+                                    end
+                                end
+                            end
+                            
                             if autoAnswerEnabled then
+                                pendingManualWord = nil -- Clear it once we decide to play it
                                 usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
                                 currentAction = "Playing: " .. chosenWord
                                 updateToggleButton()
@@ -1436,11 +1448,13 @@ task.spawn(function()
                                     hasPlayedThisTurn = false
                                 end
                             else
+                                pendingManualWord = chosenWord -- Store the word so it doesn't change when toggling ON
                                 currentAction = "Found: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
                             end
                         else
+                            pendingManualWord = nil -- Clear it if no words are found
                             currentAction = "Missing Prefix: " .. settledPrefix
                             updateToggleButton()
                             logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
