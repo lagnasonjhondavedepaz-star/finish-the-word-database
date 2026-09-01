@@ -2,6 +2,7 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local coreGui = game:GetService("CoreGui")
 local VIM = game:GetService("VirtualInputManager")
+local userInput = game:GetService("UserInputService")
 
 if coreGui:FindFirstChild("DeltaScannerConsole") then
     coreGui.DeltaScannerConsole:Destroy()
@@ -67,6 +68,38 @@ local miniPadding = Instance.new("UIPadding")
 miniPadding.PaddingLeft = UDim.new(0, 10)
 miniPadding.PaddingRight = UDim.new(0, 10)
 miniPadding.Parent = miniAutoToggleBtn
+
+-- MAKE BUTTONS DRAGGABLE
+local function makeDraggable(button)
+    local isDragging = false
+    local dragStart, startPos
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            dragStart = input.Position
+            startPos = button.Position
+        end
+    end)
+
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+
+    userInput.InputChanged:Connect(function(input)
+        if isDragging and dragStart and startPos then
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                local delta = input.Position - dragStart
+                button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end
+    end)
+end
+
+makeDraggable(toggleBtn)
+makeDraggable(miniAutoToggleBtn)
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0.55, 0, 0.75, 0)
@@ -158,7 +191,6 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = mainFrame
 
 -- WINDOW DRAGGING
-local userInput = game:GetService("UserInputService")
 local dragging = false
 local dragStart = nil
 local startPos = nil
