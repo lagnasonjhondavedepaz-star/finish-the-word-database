@@ -14,6 +14,13 @@ screenGui.Parent = coreGui
 -- GLOBAL RUN STATE
 local isRunning = true
 
+-- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
+screenGui.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        isRunning = false
+    end
+end)
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
