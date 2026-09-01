@@ -675,23 +675,52 @@ refreshSuffixOrderList = function()
     end
 end
 
-local suffixLengthButton = Instance.new("TextButton")
-suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
-suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-suffixLengthButton.Font = Enum.Font.GothamBold
-suffixLengthButton.TextSize = 10
-suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
-suffixLengthButton.AutoButtonColor = false
-suffixLengthButton.Parent = settingsScroll
-
-local suffixLengthCorner = Instance.new("UICorner")
-suffixLengthCorner.CornerRadius = UDim.new(0, 5)
-suffixLengthCorner.Parent = suffixLengthButton
-
+local lengthMode = 1 -- 1 = short, 2 = long
 local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random
 
--- NEW: Horizontal container for Sort By
+-- HORIZONTAL CONTAINER: Priority
+local priorityContainer = Instance.new("Frame")
+priorityContainer.Size = UDim2.new(1, 0, 0, 28)
+priorityContainer.BackgroundTransparency = 1
+priorityContainer.Parent = settingsScroll
+
+local priorityLayout = Instance.new("UIListLayout")
+priorityLayout.Parent = priorityContainer
+priorityLayout.FillDirection = Enum.FillDirection.Horizontal
+priorityLayout.SortOrder = Enum.SortOrder.LayoutOrder
+priorityLayout.Padding = UDim.new(0, 5)
+
+local priorityLabel = Instance.new("TextLabel")
+priorityLabel.Size = UDim2.new(0, 75, 1, 0)
+priorityLabel.BackgroundTransparency = 1
+priorityLabel.Text = "⚙️ PRIORITY:"
+priorityLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+priorityLabel.Font = Enum.Font.GothamBold
+priorityLabel.TextSize = 10
+priorityLabel.TextXAlignment = Enum.TextXAlignment.Left
+priorityLabel.Parent = priorityContainer
+
+local function createPriorityButton(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.Parent = priorityContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
+end
+
+local priorityLengthBtn = createPriorityButton("LENGTH")
+local priorityEndingBtn = createPriorityButton("ENDING")
+
+-- HORIZONTAL CONTAINER: Sort By
 local sortContainer = Instance.new("Frame")
 sortContainer.Size = UDim2.new(1, 0, 0, 28)
 sortContainer.BackgroundTransparency = 1
@@ -711,18 +740,16 @@ sortLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 sortLabel.Font = Enum.Font.GothamBold
 sortLabel.TextSize = 10
 sortLabel.TextXAlignment = Enum.TextXAlignment.Left
-sortLabel.LayoutOrder = 1
 sortLabel.Parent = sortContainer
 
-local function createSortButton(text, layoutOrder)
+local function createSortButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.33, -27, 1, 0) -- Safely splits the remaining space by 3
+    btn.Size = UDim2.new(0.33, -27, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 10
     btn.Text = text
-    btn.LayoutOrder = layoutOrder
     btn.AutoButtonColor = false
     btn.Parent = sortContainer
     
@@ -732,44 +759,84 @@ local function createSortButton(text, layoutOrder)
     return btn
 end
 
-local sortShortestBtn = createSortButton("SHORTEST", 2)
-local sortLongestBtn = createSortButton("LONGEST", 3)
-local sortRandomBtn = createSortButton("RANDOM", 4)
+local sortShortestBtn = createSortButton("SHORTEST")
+local sortLongestBtn = createSortButton("LONGEST")
+local sortRandomBtn = createSortButton("RANDOM")
 
--- KEPT INTACT: Priority Button Logic
-local function refreshSuffixLengthButton()
-    if suffixLengthStrict then
-        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        suffixLengthButton.Text = "⚙️ PRIORITY: LENGTH OVER PREFERRED ENDING"
-    else
-        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
-    end
+-- HORIZONTAL CONTAINER: Target Length
+local targetLengthContainer = Instance.new("Frame")
+targetLengthContainer.Size = UDim2.new(1, 0, 0, 28)
+targetLengthContainer.BackgroundTransparency = 1
+targetLengthContainer.Parent = settingsScroll
+
+local targetLengthLayout = Instance.new("UIListLayout")
+targetLengthLayout.Parent = targetLengthContainer
+targetLengthLayout.FillDirection = Enum.FillDirection.Horizontal
+targetLengthLayout.SortOrder = Enum.SortOrder.LayoutOrder
+targetLengthLayout.Padding = UDim.new(0, 5)
+
+local targetLengthLabel = Instance.new("TextLabel")
+targetLengthLabel.Size = UDim2.new(0, 75, 1, 0)
+targetLengthLabel.BackgroundTransparency = 1
+targetLengthLabel.Text = "🎯 LENGTH:"
+targetLengthLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+targetLengthLabel.Font = Enum.Font.GothamBold
+targetLengthLabel.TextSize = 10
+targetLengthLabel.TextXAlignment = Enum.TextXAlignment.Left
+targetLengthLabel.Parent = targetLengthContainer
+
+local function createTargetLengthButton(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.Parent = targetLengthContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
 end
 
--- NEW: Sort Button Logic
+local targetShortBtn = createTargetLengthButton("SHORT (1-9)")
+local targetLongBtn = createTargetLengthButton("LONG (10+)")
+
+-- REFRESH LOGIC FOR ALL HORIZONTAL BUTTONS
+local function refreshPriorityButtons()
+    priorityLengthBtn.BackgroundColor3 = suffixLengthStrict and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    priorityEndingBtn.BackgroundColor3 = not suffixLengthStrict and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+end
+
 local function refreshSortButtons()
     sortShortestBtn.BackgroundColor3 = (lengthOrderMode == 1) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
     sortLongestBtn.BackgroundColor3 = (lengthOrderMode == 2) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
     sortRandomBtn.BackgroundColor3 = (lengthOrderMode == 3) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
 end
 
--- KEPT INTACT: Priority Button Click
-suffixLengthButton.MouseButton1Click:Connect(function()
-    suffixLengthStrict = not suffixLengthStrict
-    refreshSuffixLengthButton()
-end)
+local function refreshTargetLengthButtons()
+    targetShortBtn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLongBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+end
 
--- NEW: Sort Button Clicks
+-- CLICK CONNECTIONS
+priorityLengthBtn.MouseButton1Click:Connect(function() suffixLengthStrict = true; refreshPriorityButtons() end)
+priorityEndingBtn.MouseButton1Click:Connect(function() suffixLengthStrict = false; refreshPriorityButtons() end)
 sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refreshSortButtons() end)
 sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
 sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
+targetShortBtn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: SHORT", Color3.fromRGB(255, 255, 0)) end)
+targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
 
 -- INITIALIZE UI
 refreshSuffixButtons()
 refreshSuffixOrderList()
-refreshSuffixLengthButton()
+refreshPriorityButtons()
 refreshSortButtons()
+refreshTargetLengthButtons()
 
 -- Update settings canvas size when layout changes
 settingsLayout.Changed:Connect(function()
@@ -780,9 +847,9 @@ end)
 autoAnswerContainer.LayoutOrder = 1
 tryUsedWordContainer.LayoutOrder = 2
 usedWordsLabel.LayoutOrder = 3
-suffixLengthButton.LayoutOrder = 4
-sortContainer.LayoutOrder = 5 -- The single container now represents all 3 buttons
--- LayoutOrder 6 is reserved for modeButton below
+priorityContainer.LayoutOrder = 4
+sortContainer.LayoutOrder = 5
+targetLengthContainer.LayoutOrder = 6
 suffixLabel.LayoutOrder = 7
 suffixFrame.LayoutOrder = 8
 suffixOrderLabel.LayoutOrder = 9
@@ -805,7 +872,7 @@ local function createButton(text, bgColor, layoutOrder)
     return btn
 end
 
-local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 6)
+-- ONLY the exit button remains here, modeButton is deleted!
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 
 -- CONSOLE FILTER BUTTON
@@ -1007,18 +1074,6 @@ end
 
 logMessage("System Initialized! Ready to dominate. [TEST VERSION]", Color3.fromRGB(0, 255, 0))
 updateStatusIndicator()
-
--- STATES & TOGGLES
-local lengthMode = 1 
-local lengthLabels = {
-    " 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)",
-    " 🎯 TARGET LENGTH: LONG (10+ LETTERS)"
-}
-modeButton.MouseButton1Click:Connect(function()
-    lengthMode = lengthMode == 1 and 2 or 1
-    modeButton.Text = lengthLabels[lengthMode]
-    logMessage("Switched to " .. lengthLabels[lengthMode], Color3.fromRGB(255, 255, 0))
-end)
 
 local suffixModeEnabled = true
 
