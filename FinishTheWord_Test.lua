@@ -367,6 +367,24 @@ toggleCorner.Parent = autoAnswerToggle
 local autoAnswerEnabled = true
 local forceReplayThisTurn = false -- Added to track when to retry
 
+-- Wakes up the mobile/native keyboard if focus was lost by the auto-typer
+local function restoreKeyboard()
+    local uis = game:GetService("UserInputService")
+    if uis:GetFocusedTextBox() then return end
+    
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    local sg = pGui and pGui:FindFirstChild("ScreenGui")
+    
+    if sg then
+        for _, obj in ipairs(sg:GetDescendants()) do
+            if obj:IsA("TextBox") then
+                obj:CaptureFocus()
+                return
+            end
+        end
+    end
+end
+
 local function toggleAutoAnswerState()
     autoAnswerEnabled = not autoAnswerEnabled
     if autoAnswerEnabled then
@@ -388,6 +406,7 @@ local function toggleAutoAnswerState()
         miniAutoToggleBtn.Text = "🤖 AUTO: OFF"
         
         logMessage("Auto Answer: DISABLED", Color3.fromRGB(255, 150, 0))
+        task.defer(restoreKeyboard) -- Pops up the keyboard instantly for manual typing
     end
 end
 
