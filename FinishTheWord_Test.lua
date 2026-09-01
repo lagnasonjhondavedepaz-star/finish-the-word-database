@@ -367,27 +367,32 @@ toggleCorner.Parent = autoAnswerToggle
 local autoAnswerEnabled = true
 local forceReplayThisTurn = false -- Added to track when to retry
 
--- Wakes up the mobile/native keyboard if focus was lost by the auto-typer
+-- CACHED TEXTBOX FOR KEYBOARD
+local cachedTextBox = nil
+
+-- Wakes up the mobile/native keyboard instantly (ignores chat)
 local function restoreKeyboard()
-    task.spawn(function()
-        task.wait(0.1) -- Wait for the button click to finish so it doesn't instantly steal focus back
-        local uis = game:GetService("UserInputService")
-        if uis:GetFocusedTextBox() then return end
-        
-        local pGui = localPlayer:FindFirstChild("PlayerGui")
-        if pGui then
-            -- Search ALL of PlayerGui to guarantee we find the hidden text box
-            for _, obj in ipairs(pGui:GetDescendants()) do
-                if obj:IsA("TextBox") then
-                    obj:CaptureFocus()
-                    -- If we successfully grabbed focus, stop searching
-                    if uis:GetFocusedTextBox() == obj then
-                        return
-                    end
-                end
+    local uis = game:GetService("UserInputService")
+    if uis:GetFocusedTextBox() then return end -- Keyboard is already open
+    
+    -- Fast path: If we found it before, just use it again
+    if cachedTextBox and cachedTextBox.Parent then
+        cachedTextBox:CaptureFocus()
+        return
+    end
+    
+    -- Slow path: Search for the game's actual hidden text box
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            -- Ignore Roblox Chat, grab the game's input box
+            if obj:IsA("TextBox") and not string.find(string.lower(obj.Name), "chat") then
+                cachedTextBox = obj
+                obj:CaptureFocus()
+                return
             end
         end
-    end)
+    end
 end
 
 local function toggleAutoAnswerState()
@@ -1329,6 +1334,11 @@ task.spawn(function()
             if isMyTurn then
                 hasTriedUsedWordThisTurn = false -- Reset for the new turn
             end
+        end
+        
+        -- ENFORCE KEYBOARD VISIBILITY DURING YOUR TURN
+        if isMyTurn then
+            restoreKeyboard()
         end
         
         if currentText ~= lastSeenText then
