@@ -691,16 +691,40 @@ suffixLengthCorner.Parent = suffixLengthButton
 
 local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random
 
-local function createSortButton(text)
+-- NEW: Horizontal container for Sort By
+local sortContainer = Instance.new("Frame")
+sortContainer.Size = UDim2.new(1, 0, 0, 28)
+sortContainer.BackgroundTransparency = 1
+sortContainer.Parent = settingsScroll
+
+local sortLayout = Instance.new("UIListLayout")
+sortLayout.Parent = sortContainer
+sortLayout.FillDirection = Enum.FillDirection.Horizontal
+sortLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sortLayout.Padding = UDim.new(0, 5)
+
+local sortLabel = Instance.new("TextLabel")
+sortLabel.Size = UDim2.new(0, 65, 1, 0)
+sortLabel.BackgroundTransparency = 1
+sortLabel.Text = "📏 SORT BY:"
+sortLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+sortLabel.Font = Enum.Font.GothamBold
+sortLabel.TextSize = 10
+sortLabel.TextXAlignment = Enum.TextXAlignment.Left
+sortLabel.LayoutOrder = 1
+sortLabel.Parent = sortContainer
+
+local function createSortButton(text, layoutOrder)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 28)
+    btn.Size = UDim2.new(0.33, -27, 1, 0) -- Safely splits the remaining space by 3
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 10
     btn.Text = text
+    btn.LayoutOrder = layoutOrder
     btn.AutoButtonColor = false
-    btn.Parent = settingsScroll
+    btn.Parent = sortContainer
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 5)
@@ -708,9 +732,9 @@ local function createSortButton(text)
     return btn
 end
 
-local sortShortestBtn = createSortButton("📏 SORT BY: SHORTEST WORD FIRST")
-local sortLongestBtn = createSortButton("📏 SORT BY: LONGEST WORD FIRST")
-local sortRandomBtn = createSortButton("📏 SORT BY: RANDOM WORD")
+local sortShortestBtn = createSortButton("SHORTEST", 2)
+local sortLongestBtn = createSortButton("LONGEST", 3)
+local sortRandomBtn = createSortButton("RANDOM", 4)
 
 -- KEPT INTACT: Priority Button Logic
 local function refreshSuffixLengthButton()
@@ -757,14 +781,12 @@ autoAnswerContainer.LayoutOrder = 1
 tryUsedWordContainer.LayoutOrder = 2
 usedWordsLabel.LayoutOrder = 3
 suffixLengthButton.LayoutOrder = 4
-sortShortestBtn.LayoutOrder = 5
-sortLongestBtn.LayoutOrder = 6
-sortRandomBtn.LayoutOrder = 7
--- LayoutOrder 8 is reserved for modeButton below
-suffixLabel.LayoutOrder = 9
-suffixFrame.LayoutOrder = 10
-suffixOrderLabel.LayoutOrder = 11
-suffixOrderFrame.LayoutOrder = 12
+sortContainer.LayoutOrder = 5 -- The single container now represents all 3 buttons
+-- LayoutOrder 6 is reserved for modeButton below
+suffixLabel.LayoutOrder = 7
+suffixFrame.LayoutOrder = 8
+suffixOrderLabel.LayoutOrder = 9
+suffixOrderFrame.LayoutOrder = 10
 
 local function createButton(text, bgColor, layoutOrder)
     local btn = Instance.new("TextButton")
@@ -783,7 +805,7 @@ local function createButton(text, bgColor, layoutOrder)
     return btn
 end
 
-local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 8)
+local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 6)
 local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 
 -- CONSOLE FILTER BUTTON
