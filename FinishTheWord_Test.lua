@@ -1325,8 +1325,9 @@ end
 
 task.spawn(function()
     local lastSeenText = ""
+    local lastValidWord = nil
     local hasPlayedThisTurn = false
-    local wasMyTurn = false
+    local lastActivePlayer = nil
     local pendingManualWord = nil -- Memory for the manual word
     local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
     
@@ -1340,14 +1341,34 @@ task.spawn(function()
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
         
-        if isMyTurn ~= wasMyTurn then
-            if lastSeenText ~= "" and validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
-                usedWords[lastSeenText] = true
-                logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+        -- GLOBAL TURN TRACKER: Detects when ANY player's turn ends to reliably catch their words
+        local currentActivePlayer = nil
+        for _, p in ipairs(players:GetPlayers()) do
+            if p:GetAttribute("IsTurn") == true then
+                currentActivePlayer = p
+                break
             end
-            wasMyTurn = isMyTurn
-            if isMyTurn then
-                hasTriedUsedWordThisTurn = false -- Reset for the new turn
+        end
+
+        if currentActivePlayer ~= lastActivePlayer then
+            local wordToLog = nil
+            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
+                wordToLog = lastSeenText
+            elseif lastValidWord and validWordsDict[lastValidWord] then
+                wordToLog = lastValidWord
+            end
+
+            if wordToLog and not usedWords[wordToLog] then
+                usedWords[wordToLog] = true
+                logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
+                updateToggleButton() -- Instantly update the UI counter
+            end
+            
+            lastActivePlayer = currentActivePlayer
+            lastValidWord = nil -- Reset memory for the new turn
+            
+            if currentActivePlayer == localPlayer then
+                hasTriedUsedWordThisTurn = false
             end
         end
         
@@ -1367,9 +1388,15 @@ task.spawn(function()
                 if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
                     usedWords[lastSeenText] = true
                     logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+                    updateToggleButton() -- Instantly update the UI counter
                 end
             end
             lastSeenText = currentText
+        end
+
+        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
+        if currentText ~= "" and validWordsDict[currentText] then
+            lastValidWord = currentText
         end
         
         if isMyTurn then
