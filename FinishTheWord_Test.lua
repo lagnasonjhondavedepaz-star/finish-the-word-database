@@ -367,28 +367,47 @@ toggleCorner.Parent = autoAnswerToggle
 local autoAnswerEnabled = true
 local forceReplayThisTurn = false -- Added to track when to retry
 
--- CACHED TEXTBOX FOR KEYBOARD
-local cachedTextBox = nil
+-- CACHED CUSTOM KEYBOARD
+local customKeyboardUI = nil
 
--- Wakes up the mobile/native keyboard instantly (ignores chat)
+-- Hunts down the game's custom GUI keyboard and forces it visible
 local function restoreKeyboard()
-    local uis = game:GetService("UserInputService")
-    if uis:GetFocusedTextBox() then return end -- Keyboard is already open
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if not pGui then return end
     
-    -- Fast path: If we found it before, just use it again
-    if cachedTextBox and cachedTextBox.Parent then
-        cachedTextBox:CaptureFocus()
+    -- Fast path: if we already found the custom keyboard, just force it open
+    if customKeyboardUI and customKeyboardUI.Parent then
+        customKeyboardUI.Visible = true
+        local parentGui = customKeyboardUI:FindFirstAncestorWhichIsA("ScreenGui")
+        if parentGui then parentGui.Enabled = true end
         return
     end
     
-    -- Slow path: Search for the game's actual hidden text box
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        for _, obj in ipairs(pGui:GetDescendants()) do
-            -- Ignore Roblox Chat, grab the game's input box
-            if obj:IsA("TextBox") and not string.find(string.lower(obj.Name), "chat") then
-                cachedTextBox = obj
-                obj:CaptureFocus()
+    -- Slow path: search for the custom keyboard frame
+    for _, obj in ipairs(pGui:GetDescendants()) do
+        if obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
+            local name = string.lower(obj.Name)
+            local isKeyboard = string.find(name, "keyboard")
+            
+            -- Fallback: If it's not named "keyboard", check if it has A-Z buttons
+            if not isKeyboard then
+                local buttonCount = 0
+                for _, child in ipairs(obj:GetChildren()) do
+                    if child:IsA("TextButton") or child:IsA("ImageButton") then
+                        buttonCount = buttonCount + 1
+                    end
+                end
+                if buttonCount >= 26 then
+                    isKeyboard = true
+                end
+            end
+            
+            if isKeyboard then
+                customKeyboardUI = obj
+                obj.Visible = true
+                -- Ensure the parent ScreenGui isn't disabled
+                local parentGui = obj:FindFirstAncestorWhichIsA("ScreenGui")
+                if parentGui then parentGui.Enabled = true end
                 return
             end
         end
