@@ -402,18 +402,18 @@ tryUsedWordPadding.Parent = tryUsedWordLabel
 local tryUsedWordToggle = Instance.new("TextButton")
 tryUsedWordToggle.Size = UDim2.new(0, 100, 0, 26)
 tryUsedWordToggle.Position = UDim2.new(1, -106, 0.5, -13)
-tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0) -- Starts orange (disabled)
 tryUsedWordToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 tryUsedWordToggle.Font = Enum.Font.GothamBold
 tryUsedWordToggle.TextSize = 11
-tryUsedWordToggle.Text = "✓ ENABLED"
+tryUsedWordToggle.Text = "✗ DISABLED" -- Starts with disabled text
 tryUsedWordToggle.Parent = tryUsedWordContainer
 
 local tryUsedWordCorner = Instance.new("UICorner")
 tryUsedWordCorner.CornerRadius = UDim.new(0, 6)
 tryUsedWordCorner.Parent = tryUsedWordToggle
 
-local tryUsedWordsEnabled = true
+local tryUsedWordsEnabled = false -- Default state set to false
 
 tryUsedWordToggle.MouseButton1Click:Connect(function()
     tryUsedWordsEnabled = not tryUsedWordsEnabled
