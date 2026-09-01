@@ -703,35 +703,27 @@ settingsLayout.Changed:Connect(function()
     settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
 end)
 
--- CONTROLS SECTION (moved to settings)
-local controlsSection = Instance.new("Frame")
-controlsSection.Size = UDim2.new(1, 0, 0, 0)
-controlsSection.AutomaticSize = Enum.AutomaticSize.Y
-controlsSection.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-controlsSection.BorderSizePixel = 0
-controlsSection.Parent = settingsScroll
+-- ASSIGN EXPLICIT LAYOUT ORDERS TO REORDER THE SETTINGS
+autoAnswerContainer.LayoutOrder = 1
+usedWordsLabel.LayoutOrder = 2
+suffixLengthButton.LayoutOrder = 3
+lengthOrderButton.LayoutOrder = 4
+-- LayoutOrder 5 is reserved for modeButton below
+suffixLabel.LayoutOrder = 6
+suffixFrame.LayoutOrder = 7
+suffixOrderLabel.LayoutOrder = 8
+suffixOrderFrame.LayoutOrder = 9
 
--- BUTTON CONTAINER
-local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, 0, 0, 0)
-buttonContainer.AutomaticSize = Enum.AutomaticSize.Y
-buttonContainer.BackgroundTransparency = 1
-buttonContainer.Parent = controlsSection
-
-local buttonLayout = Instance.new("UIListLayout")
-buttonLayout.Parent = buttonContainer
-buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-buttonLayout.Padding = UDim.new(0, 5)
-
-local function createButton(text, bgColor)
+local function createButton(text, bgColor, layoutOrder)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 26)
+    btn.Size = UDim2.new(1, 0, 0, 28)
     btn.BackgroundColor3 = bgColor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 10
     btn.Text = text
-    btn.Parent = buttonContainer
+    btn.LayoutOrder = layoutOrder
+    btn.Parent = settingsScroll 
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 5)
@@ -739,8 +731,8 @@ local function createButton(text, bgColor)
     return btn
 end
 
-local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200))
-local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
+local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200), 5)
+local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 10)
 
 -- CONSOLE FILTER BUTTON
 local showOnlyMissing = false
