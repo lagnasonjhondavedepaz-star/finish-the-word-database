@@ -1156,7 +1156,8 @@ task.spawn(function()
                         local exactLengthMatches = {}
                         local fallbackMatches = {}
                         
-                        local tryUsedWord = (math.random(1, 100) <= 20)
+                        -- Only attempt a used word if the target length is Short (lengthMode 1)
+                        local tryUsedWord = (lengthMode == 1) and (math.random(1, 100) <= 20)
                         local usedFallback = {}
                         local usedExact = {}
                         
@@ -1241,7 +1242,7 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-if #finalPool > 0 then
+                            if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             
                             if autoAnswerEnabled then
