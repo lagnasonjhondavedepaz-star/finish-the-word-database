@@ -813,7 +813,7 @@ targetLengthLabel.Parent = targetLengthContainer
 
 local function createTargetLengthButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    btn.Size = UDim2.new(0.33, -27, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
@@ -829,7 +829,8 @@ local function createTargetLengthButton(text)
 end
 
 local targetShortBtn = createTargetLengthButton("SHORT (1-9)")
-local targetLongBtn = createTargetLengthButton("LONG (10+)")
+local targetMidBtn = createTargetLengthButton("MID (10-15)")
+local targetLongBtn = createTargetLengthButton("LONG (16+)")
 
 -- REFRESH LOGIC FOR ALL HORIZONTAL BUTTONS
 local function refreshPriorityButtons()
@@ -845,7 +846,8 @@ end
 
 local function refreshTargetLengthButtons()
     targetShortBtn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
-    targetLongBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetMidBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLongBtn.BackgroundColor3 = (lengthMode == 3) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
 end
 
 -- CLICK CONNECTIONS
@@ -855,7 +857,8 @@ sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refres
 sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
 sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
 targetShortBtn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: SHORT", Color3.fromRGB(255, 255, 0)) end)
-targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
+targetMidBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: MID", Color3.fromRGB(255, 255, 0)) end)
+targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 3; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
 
 -- INITIALIZE UI
 refreshSuffixButtons()
@@ -1124,7 +1127,9 @@ local function matchesLengthMode(word)
     if lengthMode == 1 then
         return #word <= 9
     elseif lengthMode == 2 then
-        return #word >= 10
+        return #word >= 10 and #word <= 15
+    elseif lengthMode == 3 then
+        return #word >= 16
     end
     return true
 end
@@ -1522,7 +1527,8 @@ task.spawn(function()
                             if string.sub(word, 1, #settledPrefix) == settledPrefix then
                                 local matchesLength = false
                                 if lengthMode == 1 and #word <= 9 then matchesLength = true end
-                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
+                                if lengthMode == 2 and #word >= 10 and #word <= 15 then matchesLength = true end
+                                if lengthMode == 3 and #word >= 16 then matchesLength = true end
                                 
                                 if usedWords[word] then
                                     table.insert(usedFallback, word)
