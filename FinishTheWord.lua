@@ -2,6 +2,7 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local coreGui = game:GetService("CoreGui")
 local VIM = game:GetService("VirtualInputManager")
+local userInput = game:GetService("UserInputService")
 
 if coreGui:FindFirstChild("DeltaScannerConsole") then
     coreGui.DeltaScannerConsole:Destroy()
@@ -23,18 +24,34 @@ screenGui.AncestryChanged:Connect(function(_, parent)
     end
 end)
 
+-- TOP BUTTONS CONTAINER (Keeps them centered side-by-side)
+local topButtonsContainer = Instance.new("Frame")
+topButtonsContainer.Size = UDim2.new(0, 0, 0, 28)
+topButtonsContainer.Position = UDim2.new(0.5, 0, 0, 12)
+topButtonsContainer.AnchorPoint = Vector2.new(0.5, 0)
+topButtonsContainer.BackgroundTransparency = 1
+topButtonsContainer.AutomaticSize = Enum.AutomaticSize.X
+topButtonsContainer.Parent = screenGui
+
+local topButtonsLayout = Instance.new("UIListLayout")
+topButtonsLayout.Parent = topButtonsContainer
+topButtonsLayout.FillDirection = Enum.FillDirection.Horizontal
+topButtonsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
-toggleBtn.AnchorPoint = Vector2.new(0.5, 0) -- Keeps it perfectly centered when it expands
-toggleBtn.Position = UDim2.new(0.5, 0, 0, 12)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.TextSize = 11
 toggleBtn.Text = "◉ CONSOLE"
-toggleBtn.AutomaticSize = Enum.AutomaticSize.X -- Allows it to stretch based on text length
-toggleBtn.Parent = screenGui
+toggleBtn.AutomaticSize = Enum.AutomaticSize.X
+toggleBtn.LayoutOrder = 1
+toggleBtn.Parent = topButtonsContainer
 
 local togglePadding = Instance.new("UIPadding")
 togglePadding.PaddingLeft = UDim.new(0, 10)
@@ -45,11 +62,9 @@ local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
--- MINI AUTO TOGGLE (Visible only when UI is hidden)
+-- MINI AUTO TOGGLE
 local miniAutoToggleBtn = Instance.new("TextButton")
 miniAutoToggleBtn.Size = UDim2.new(0, 100, 0, 28)
-miniAutoToggleBtn.AnchorPoint = Vector2.new(0.5, 0)
-miniAutoToggleBtn.Position = UDim2.new(0.5, 0, 0, 45) -- Placed just below the main toggle
 miniAutoToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 miniAutoToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 miniAutoToggleBtn.Font = Enum.Font.GothamBold
@@ -57,7 +72,8 @@ miniAutoToggleBtn.TextSize = 11
 miniAutoToggleBtn.Text = "🤖 AUTO: ON"
 miniAutoToggleBtn.AutomaticSize = Enum.AutomaticSize.X
 miniAutoToggleBtn.Visible = false -- Hidden by default
-miniAutoToggleBtn.Parent = screenGui
+miniAutoToggleBtn.LayoutOrder = 2
+miniAutoToggleBtn.Parent = topButtonsContainer
 
 local miniCorner = Instance.new("UICorner")
 miniCorner.CornerRadius = UDim.new(0, 6)
@@ -158,7 +174,6 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = mainFrame
 
 -- WINDOW DRAGGING
-local userInput = game:GetService("UserInputService")
 local dragging = false
 local dragStart = nil
 local startPos = nil
@@ -363,6 +378,54 @@ end
 autoAnswerToggle.MouseButton1Click:Connect(toggleAutoAnswerState)
 miniAutoToggleBtn.MouseButton1Click:Connect(toggleAutoAnswerState)
 
+-- Trying Used Words Toggle
+local tryUsedWordContainer = Instance.new("Frame")
+tryUsedWordContainer.Size = UDim2.new(1, 0, 0, 34)
+tryUsedWordContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+tryUsedWordContainer.BorderSizePixel = 0
+tryUsedWordContainer.Parent = settingsScroll
+
+local tryUsedWordLabel = Instance.new("TextLabel")
+tryUsedWordLabel.Size = UDim2.new(1, -110, 1, 0)
+tryUsedWordLabel.BackgroundTransparency = 1
+tryUsedWordLabel.Text = "🧠 TRY USED WORDS (SHORT ONLY)"
+tryUsedWordLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+tryUsedWordLabel.Font = Enum.Font.GothamBold
+tryUsedWordLabel.TextSize = 10
+tryUsedWordLabel.TextXAlignment = Enum.TextXAlignment.Left
+tryUsedWordLabel.Parent = tryUsedWordContainer
+
+local tryUsedWordPadding = Instance.new("UIPadding")
+tryUsedWordPadding.PaddingLeft = UDim.new(0, 10)
+tryUsedWordPadding.Parent = tryUsedWordLabel
+
+local tryUsedWordToggle = Instance.new("TextButton")
+tryUsedWordToggle.Size = UDim2.new(0, 100, 0, 26)
+tryUsedWordToggle.Position = UDim2.new(1, -106, 0.5, -13)
+tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0) -- Starts orange (disabled)
+tryUsedWordToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+tryUsedWordToggle.Font = Enum.Font.GothamBold
+tryUsedWordToggle.TextSize = 11
+tryUsedWordToggle.Text = "✗ DISABLED" -- Starts with disabled text
+tryUsedWordToggle.Parent = tryUsedWordContainer
+
+local tryUsedWordCorner = Instance.new("UICorner")
+tryUsedWordCorner.CornerRadius = UDim.new(0, 6)
+tryUsedWordCorner.Parent = tryUsedWordToggle
+
+local tryUsedWordsEnabled = false -- Default state set to false
+
+tryUsedWordToggle.MouseButton1Click:Connect(function()
+    tryUsedWordsEnabled = not tryUsedWordsEnabled
+    if tryUsedWordsEnabled then
+        tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        tryUsedWordToggle.Text = "✓ ENABLED"
+    else
+        tryUsedWordToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        tryUsedWordToggle.Text = "✗ DISABLED"
+    end
+end)
+
 local usedWordsLabel = Instance.new("TextLabel")
 usedWordsLabel.Size = UDim2.new(1, 0, 0, 18)
 usedWordsLabel.BackgroundTransparency = 1
@@ -389,11 +452,54 @@ local suffixOptions = {"UM", "LY", "X", "Y", "IA", "AK", "KY", "PT"}
 local selectedSuffixes = {}
 local suffixPriority = {}
 for _, suffix in ipairs(suffixOptions) do
-    selectedSuffixes[suffix] = true
-    table.insert(suffixPriority, suffix)
+    selectedSuffixes[suffix] = false -- Unchecks all suffixes by default[cite: 1]
+    -- table.insert(suffixPriority, suffix) removed so the priority list starts empty[cite: 1]
 end
-local suffixLengthStrict = false
+local suffixLengthStrict = true -- Defaults priority to Length over Preferred Ending[cite: 1]
 local refreshSuffixOrderList
+
+-- CUSTOM SUFFIX UI
+local customSuffixValue = ""
+
+local customSuffixContainer = Instance.new("Frame")
+customSuffixContainer.Size = UDim2.new(1, 0, 0, 34)
+customSuffixContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+customSuffixContainer.BorderSizePixel = 0
+customSuffixContainer.Parent = settingsScroll
+
+local customSuffixTitle = Instance.new("TextLabel")
+customSuffixTitle.Size = UDim2.new(0.5, 0, 1, 0)
+customSuffixTitle.BackgroundTransparency = 1
+customSuffixTitle.Text = "✍️ CUSTOM SUFFIX:"
+customSuffixTitle.TextColor3 = Color3.fromRGB(0, 255, 150)
+customSuffixTitle.Font = Enum.Font.GothamBold
+customSuffixTitle.TextSize = 10
+customSuffixTitle.TextXAlignment = Enum.TextXAlignment.Left
+customSuffixTitle.Parent = customSuffixContainer
+
+local customTitlePadding = Instance.new("UIPadding")
+customTitlePadding.PaddingLeft = UDim.new(0, 10)
+customTitlePadding.Parent = customSuffixTitle
+
+local customSuffixInput = Instance.new("TextBox")
+customSuffixInput.Size = UDim2.new(0.5, -10, 0, 24)
+customSuffixInput.Position = UDim2.new(0.5, 0, 0.5, -12)
+customSuffixInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+customSuffixInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+customSuffixInput.Font = Enum.Font.GothamBold
+customSuffixInput.TextSize = 10
+customSuffixInput.PlaceholderText = "Enter suffix..."
+customSuffixInput.Text = ""
+customSuffixInput.Parent = customSuffixContainer
+
+local customInputCorner = Instance.new("UICorner")
+customInputCorner.CornerRadius = UDim.new(0, 4)
+customInputCorner.Parent = customSuffixInput
+
+customSuffixInput.FocusLost:Connect(function()
+    customSuffixValue = customSuffixInput.Text:upper():match("^[%a]*") or ""
+    customSuffixInput.Text = customSuffixValue
+end)
 
 local suffixLabel = Instance.new("TextLabel")
 suffixLabel.Size = UDim2.new(1, 0, 0, 22)
@@ -595,111 +701,41 @@ refreshSuffixOrderList = function()
     end
 end
 
-local suffixLengthButton = Instance.new("TextButton")
-suffixLengthButton.Size = UDim2.new(1, 0, 0, 28)
-suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-suffixLengthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-suffixLengthButton.Font = Enum.Font.GothamBold
-suffixLengthButton.TextSize = 10
-suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
-suffixLengthButton.AutoButtonColor = false
-suffixLengthButton.Parent = settingsScroll
+local lengthMode = 1 -- 1 = short, 2 = long
+local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random
 
-local suffixLengthCorner = Instance.new("UICorner")
-suffixLengthCorner.CornerRadius = UDim.new(0, 5)
-suffixLengthCorner.Parent = suffixLengthButton
+-- HORIZONTAL CONTAINER: Priority
+local priorityContainer = Instance.new("Frame")
+priorityContainer.Size = UDim2.new(1, 0, 0, 28)
+priorityContainer.BackgroundTransparency = 1
+priorityContainer.Parent = settingsScroll
 
-local lengthOrderMode = 1 -- 1 = Shortest, 2 = Longest, 3 = Random
+local priorityLayout = Instance.new("UIListLayout")
+priorityLayout.Parent = priorityContainer
+priorityLayout.FillDirection = Enum.FillDirection.Horizontal
+priorityLayout.SortOrder = Enum.SortOrder.LayoutOrder
+priorityLayout.Padding = UDim.new(0, 5)
 
-local lengthOrderButton = Instance.new("TextButton")
-lengthOrderButton.Size = UDim2.new(1, 0, 0, 28)
-lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-lengthOrderButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-lengthOrderButton.Font = Enum.Font.GothamBold
-lengthOrderButton.TextSize = 10
-lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
-lengthOrderButton.AutoButtonColor = false
-lengthOrderButton.Parent = settingsScroll
+local priorityLabel = Instance.new("TextLabel")
+priorityLabel.Size = UDim2.new(0, 75, 1, 0)
+priorityLabel.BackgroundTransparency = 1
+priorityLabel.Text = "⚙️ PRIORITY:"
+priorityLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+priorityLabel.Font = Enum.Font.GothamBold
+priorityLabel.TextSize = 10
+priorityLabel.TextXAlignment = Enum.TextXAlignment.Left
+priorityLabel.Parent = priorityContainer
 
-local lengthOrderCorner = Instance.new("UICorner")
-lengthOrderCorner.CornerRadius = UDim.new(0, 5)
-lengthOrderCorner.Parent = lengthOrderButton
-
-local function refreshSuffixLengthButton()
-    if suffixLengthStrict then
-        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        suffixLengthButton.Text = "⚙️ PRIORITY: LENGTH OVER PREFERRED ENDING"
-    else
-        suffixLengthButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        suffixLengthButton.Text = "⚙️ PRIORITY: PREFERRED ENDING OVER LENGTH"
-    end
-end
-
-local function refreshLengthOrderButton()
-    if lengthOrderMode == 1 then
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        lengthOrderButton.Text = "📏 SORT BY: SHORTEST WORD FIRST"
-    elseif lengthOrderMode == 2 then
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 160, 120)
-        lengthOrderButton.Text = "📏 SORT BY: LONGEST WORD FIRST"
-    else
-        lengthOrderButton.BackgroundColor3 = Color3.fromRGB(0, 120, 180)
-        lengthOrderButton.Text = "📏 SORT BY: RANDOM WORD"
-    end
-end
-
-suffixLengthButton.MouseButton1Click:Connect(function()
-    suffixLengthStrict = not suffixLengthStrict
-    refreshSuffixLengthButton()
-end)
-
-lengthOrderButton.MouseButton1Click:Connect(function()
-    lengthOrderMode = lengthOrderMode + 1
-    if lengthOrderMode > 3 then
-        lengthOrderMode = 1
-    end
-    refreshLengthOrderButton()
-end)
-
-refreshSuffixButtons()
-refreshSuffixOrderList()
-refreshSuffixLengthButton()
-refreshLengthOrderButton()
-
--- Update settings canvas size when layout changes
-settingsLayout.Changed:Connect(function()
-    settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
-end)
-
--- CONTROLS SECTION (moved to settings)
-local controlsSection = Instance.new("Frame")
-controlsSection.Size = UDim2.new(1, 0, 0, 0)
-controlsSection.AutomaticSize = Enum.AutomaticSize.Y
-controlsSection.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-controlsSection.BorderSizePixel = 0
-controlsSection.Parent = settingsScroll
-
--- BUTTON CONTAINER
-local buttonContainer = Instance.new("Frame")
-buttonContainer.Size = UDim2.new(1, 0, 0, 0)
-buttonContainer.AutomaticSize = Enum.AutomaticSize.Y
-buttonContainer.BackgroundTransparency = 1
-buttonContainer.Parent = controlsSection
-
-local buttonLayout = Instance.new("UIListLayout")
-buttonLayout.Parent = buttonContainer
-buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-buttonLayout.Padding = UDim.new(0, 5)
-
-local function createButton(text, bgColor)
+local function createPriorityButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 26)
-    btn.BackgroundColor3 = bgColor
+    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 10
     btn.Text = text
-    btn.Parent = buttonContainer
+    btn.AutoButtonColor = false
+    btn.Parent = priorityContainer
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 5)
@@ -707,8 +743,164 @@ local function createButton(text, bgColor)
     return btn
 end
 
-local modeButton = createButton(" 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)", Color3.fromRGB(40, 100, 200))
-local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30))
+local priorityLengthBtn = createPriorityButton("LENGTH")
+local priorityEndingBtn = createPriorityButton("ENDING")
+
+-- HORIZONTAL CONTAINER: Sort By
+local sortContainer = Instance.new("Frame")
+sortContainer.Size = UDim2.new(1, 0, 0, 28)
+sortContainer.BackgroundTransparency = 1
+sortContainer.Parent = settingsScroll
+
+local sortLayout = Instance.new("UIListLayout")
+sortLayout.Parent = sortContainer
+sortLayout.FillDirection = Enum.FillDirection.Horizontal
+sortLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sortLayout.Padding = UDim.new(0, 5)
+
+local sortLabel = Instance.new("TextLabel")
+sortLabel.Size = UDim2.new(0, 65, 1, 0)
+sortLabel.BackgroundTransparency = 1
+sortLabel.Text = "📏 SORT BY:"
+sortLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+sortLabel.Font = Enum.Font.GothamBold
+sortLabel.TextSize = 10
+sortLabel.TextXAlignment = Enum.TextXAlignment.Left
+sortLabel.Parent = sortContainer
+
+local function createSortButton(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.33, -27, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.Parent = sortContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
+end
+
+local sortShortestBtn = createSortButton("SHORTEST")
+local sortLongestBtn = createSortButton("LONGEST")
+local sortRandomBtn = createSortButton("RANDOM")
+
+-- HORIZONTAL CONTAINER: Target Length
+local targetLengthContainer = Instance.new("Frame")
+targetLengthContainer.Size = UDim2.new(1, 0, 0, 28)
+targetLengthContainer.BackgroundTransparency = 1
+targetLengthContainer.Parent = settingsScroll
+
+local targetLengthLayout = Instance.new("UIListLayout")
+targetLengthLayout.Parent = targetLengthContainer
+targetLengthLayout.FillDirection = Enum.FillDirection.Horizontal
+targetLengthLayout.SortOrder = Enum.SortOrder.LayoutOrder
+targetLengthLayout.Padding = UDim.new(0, 5)
+
+local targetLengthLabel = Instance.new("TextLabel")
+targetLengthLabel.Size = UDim2.new(0, 75, 1, 0)
+targetLengthLabel.BackgroundTransparency = 1
+targetLengthLabel.Text = "🎯 LENGTH:"
+targetLengthLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+targetLengthLabel.Font = Enum.Font.GothamBold
+targetLengthLabel.TextSize = 10
+targetLengthLabel.TextXAlignment = Enum.TextXAlignment.Left
+targetLengthLabel.Parent = targetLengthContainer
+
+local function createTargetLengthButton(text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.AutoButtonColor = false
+    btn.Parent = targetLengthContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
+end
+
+local targetShortBtn = createTargetLengthButton("SHORT (1-9)")
+local targetLongBtn = createTargetLengthButton("LONG (10+)")
+
+-- REFRESH LOGIC FOR ALL HORIZONTAL BUTTONS
+local function refreshPriorityButtons()
+    priorityLengthBtn.BackgroundColor3 = suffixLengthStrict and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    priorityEndingBtn.BackgroundColor3 = not suffixLengthStrict and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+end
+
+local function refreshSortButtons()
+    sortShortestBtn.BackgroundColor3 = (lengthOrderMode == 1) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    sortLongestBtn.BackgroundColor3 = (lengthOrderMode == 2) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+    sortRandomBtn.BackgroundColor3 = (lengthOrderMode == 3) and Color3.fromRGB(0, 160, 120) or Color3.fromRGB(60, 60, 60)
+end
+
+local function refreshTargetLengthButtons()
+    targetShortBtn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLongBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+end
+
+-- CLICK CONNECTIONS
+priorityLengthBtn.MouseButton1Click:Connect(function() suffixLengthStrict = true; refreshPriorityButtons() end)
+priorityEndingBtn.MouseButton1Click:Connect(function() suffixLengthStrict = false; refreshPriorityButtons() end)
+sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refreshSortButtons() end)
+sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
+sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
+targetShortBtn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: SHORT", Color3.fromRGB(255, 255, 0)) end)
+targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
+
+-- INITIALIZE UI
+refreshSuffixButtons()
+refreshSuffixOrderList()
+refreshPriorityButtons()
+refreshSortButtons()
+refreshTargetLengthButtons()
+
+-- Update settings canvas size when layout changes
+settingsLayout.Changed:Connect(function()
+    settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y)
+end)
+
+-- ASSIGN EXPLICIT LAYOUT ORDERS TO REORDER THE SETTINGS
+autoAnswerContainer.LayoutOrder = 1
+tryUsedWordContainer.LayoutOrder = 2
+usedWordsLabel.LayoutOrder = 3
+priorityContainer.LayoutOrder = 4
+sortContainer.LayoutOrder = 5
+targetLengthContainer.LayoutOrder = 6
+customSuffixContainer.LayoutOrder = 7
+suffixLabel.LayoutOrder = 8
+suffixFrame.LayoutOrder = 9
+suffixOrderLabel.LayoutOrder = 10
+suffixOrderFrame.LayoutOrder = 11
+
+local function createButton(text, bgColor, layoutOrder)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 28)
+    btn.BackgroundColor3 = bgColor
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Text = text
+    btn.LayoutOrder = layoutOrder
+    btn.Parent = settingsScroll 
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = btn
+    return btn
+end
+
+-- ONLY the exit button remains here, modeButton is deleted!
+local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 
 -- CONSOLE FILTER BUTTON
 local showOnlyMissing = false
@@ -907,25 +1099,25 @@ local function logMessage(text, color)
     task.defer(updateConsoleScroll)
 end
 
-logMessage("System Initialized! Ready to dominate. [TEST VERSION]", Color3.fromRGB(0, 255, 0))
+logMessage("System Initialized! Ready to dominate. [BETA VERSION]", Color3.fromRGB(0, 255, 0))
 updateStatusIndicator()
-
--- STATES & TOGGLES
-local lengthMode = 1 
-local lengthLabels = {
-    " 🎯 TARGET LENGTH: SHORT (1-9 LETTERS)",
-    " 🎯 TARGET LENGTH: LONG (10+ LETTERS)"
-}
-modeButton.MouseButton1Click:Connect(function()
-    lengthMode = lengthMode == 1 and 2 or 1
-    modeButton.Text = lengthLabels[lengthMode]
-    logMessage("Switched to " .. lengthLabels[lengthMode], Color3.fromRGB(255, 255, 0))
-end)
 
 local suffixModeEnabled = true
 
 local function getSelectedSuffixes()
-    return suffixPriority
+    local list = {}
+    
+    -- Custom Suffix is always placed first in the hierarchy if it is not empty
+    if customSuffixValue and customSuffixValue ~= "" then
+        table.insert(list, customSuffixValue)
+    end
+    
+    -- Then append the standard checked suffixes from your order list
+    for _, suffix in ipairs(suffixPriority) do
+        table.insert(list, suffix)
+    end
+    
+    return list
 end
 
 local function matchesLengthMode(word)
@@ -1249,9 +1441,11 @@ end
 
 task.spawn(function()
     local lastSeenText = ""
+    local lastValidWord = nil
     local hasPlayedThisTurn = false
-    local wasMyTurn = false
+    local lastActivePlayer = nil
     local pendingManualWord = nil -- Memory for the manual word
+    local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
     
     while isRunning and task.wait(0.1) do
         -- Reset the turn state if the user just enabled auto-type
@@ -1263,12 +1457,35 @@ task.spawn(function()
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
         
-        if isMyTurn ~= wasMyTurn then
-            if lastSeenText ~= "" and validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
-                usedWords[lastSeenText] = true
-                logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+        -- GLOBAL TURN TRACKER: Detects when ANY player's turn ends to reliably catch their words
+        local currentActivePlayer = nil
+        for _, p in ipairs(players:GetPlayers()) do
+            if p:GetAttribute("IsTurn") == true then
+                currentActivePlayer = p
+                break
             end
-            wasMyTurn = isMyTurn
+        end
+
+        if currentActivePlayer ~= lastActivePlayer then
+            local wordToLog = nil
+            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
+                wordToLog = lastSeenText
+            elseif lastValidWord and validWordsDict[lastValidWord] then
+                wordToLog = lastValidWord
+            end
+
+            if wordToLog and not usedWords[wordToLog] then
+                usedWords[wordToLog] = true
+                logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
+                updateToggleButton() -- Instantly update the UI counter
+            end
+            
+            lastActivePlayer = currentActivePlayer
+            lastValidWord = nil -- Reset memory for the new turn
+            
+            if currentActivePlayer == localPlayer then
+                hasTriedUsedWordThisTurn = false
+            end
         end
         
         if currentText ~= lastSeenText then
@@ -1287,9 +1504,15 @@ task.spawn(function()
                 if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
                     usedWords[lastSeenText] = true
                     logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
+                    updateToggleButton() -- Instantly update the UI counter
                 end
             end
             lastSeenText = currentText
+        end
+
+        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
+        if currentText ~= "" and validWordsDict[currentText] then
+            lastValidWord = currentText
         end
         
         if isMyTurn then
@@ -1322,8 +1545,8 @@ task.spawn(function()
                             usedChance = 5
                         end
                         
-                        -- Only attempt a used word if the target length is Short (lengthMode 1)
-                        local tryUsedWord = (lengthMode == 1) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        -- Only attempt a used word if ENABLED, it's short, and we haven't already tried one this turn
+                        local tryUsedWord = tryUsedWordsEnabled and (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
                         local usedExact = {}
                         
@@ -1353,14 +1576,7 @@ task.spawn(function()
                             fallbackMatches = usedFallback
                             exactLengthMatches = usedExact
                             isPlayingUsedWord = true
-                        end
-                        
-                        local isPlayingUsedWord = false
-                        if tryUsedWord and #usedFallback > 0 then
-                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
-                            fallbackMatches = usedFallback
-                            exactLengthMatches = usedExact
-                            isPlayingUsedWord = true
+                            hasTriedUsedWordThisTurn = true -- Mark that we tried a used word this turn
                         end
                         
                         local finalPool = {}
@@ -1423,7 +1639,6 @@ if #finalPool > 0 then
                             
                             if autoAnswerEnabled then
                                 pendingManualWord = nil -- Clear it once we decide to play it
-                                usedWords[chosenWord] = true -- Moved inside so manual mode doesn't pre-blacklist it
                                 currentAction = "Playing: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
