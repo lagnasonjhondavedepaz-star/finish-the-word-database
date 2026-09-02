@@ -1275,7 +1275,6 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
     local typoType = 1
-    local willAddEndTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= 10) 
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
@@ -1391,41 +1390,10 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     
     if not isRunning then return end
     
-if willAddEndTypo then
-        task.wait(math.random(50, 150) / 1000)
-        -- Uses "BackSlash" for the \ key (repeated to maintain the existing random logic)
-        local endTypoChars = {"BackSlash", "BackSlash"}
-        local chosenEndTypo = endTypoChars[math.random(1, 2)]
-        local endTypoKey = Enum.KeyCode[chosenEndTypo]
-        
-        VIM:SendKeyEvent(true, endTypoKey, false, game)
-        task.wait(math.random(20, 50) / 1000)
-        VIM:SendKeyEvent(false, endTypoKey, false, game)
-        
-        -- 50% chance to wait 100-250ms, otherwise no delay before hitting Return
-        if math.random(1, 100) <= 50 then
-            task.wait(math.random(100, 250) / 1000)
-        end
-        
-        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait(0.05)
-        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-        
-        task.wait(math.random(500, 1000) / 1000)
-        
-        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-        task.wait(math.random(20, 50) / 1000)
-        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-        
-        task.wait(math.random(200, 500) / 1000)
-    end
-    
-    if not isRunning then return end
-    
 if #fullWord >= 15 then
         logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
         task.wait(2)
-    elseif (not willAddEndTypo) and math.random(1, 100) <= 5 then
+    elseif math.random(1, 100) <= 5 then
         logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
         task.wait(3)
     else
