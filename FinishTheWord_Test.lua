@@ -1252,27 +1252,27 @@ end
 local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
-    local willStartDelay = false
-    if #fullWord >= 10 then
-        willStartDelay = (math.random(1, 100) <= 75)
+    if #fullWord <= 9 then
+        task.wait(math.random(500, 1500) / 1000)
     else
-        willStartDelay = (math.random(1, 100) <= 50)
-    end
-    
-    if willStartDelay then
-        task.wait(2)
-    else
-        if prefixLength >= 2 then
-            task.wait(math.random(1500, 3000) / 1000)
+        local willStartDelay = (#fullWord >= 10 and math.random(1, 100) <= 75)
+        if willStartDelay then
+            task.wait(2)
         else
-            task.wait(math.random(500, 1500) / 1000)
+            if prefixLength >= 2 then
+                task.wait(math.random(1500, 3000) / 1000)
+            else
+                task.wait(math.random(500, 1500) / 1000)
+            end
         end
     end
     
     if not isRunning then return end
     
     local typoRate = 25
-    if #fullWord >= 15 then
+    if #fullWord <= 9 then
+        typoRate = 5
+    elseif #fullWord >= 15 then
         typoRate = 45
     end
     
@@ -1291,9 +1291,9 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         end
     end
     
-    local doubleCheckCount = 0
+local doubleCheckCount = 0
     local maxDoubleChecks = (#fullWord >= 15) and 2 or 1
-    local charsBeforePause = math.random(1, 3) 
+    local charsBeforePause = (#fullWord <= 9) and math.random(2, 4) or math.random(1, 3) 
     local currentStreak = 0
     
     for i = 1, #suffix do
@@ -1372,21 +1372,25 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
             if currentStreak >= charsBeforePause then
                 if #fullWord >= 15 then
                     task.wait(math.random(200, 450) / 1000)
-                elseif #fullWord > 8 then
+                elseif #fullWord >= 10 then
                     task.wait(math.random(150, 300) / 1000)
                 else
-                    task.wait(math.random(100, 250) / 1000)
+                    task.wait(math.random(80, 150) / 1000)
                 end
                 currentStreak = 0
-                charsBeforePause = math.random(1, 3)
+                charsBeforePause = (#fullWord <= 9) and math.random(2, 4) or math.random(1, 3)
             else
-                task.wait(math.random(40, 95) / 1000)
+                if #fullWord <= 9 then
+                    task.wait(math.random(30, 70) / 1000)
+                else
+                    task.wait(math.random(40, 95) / 1000)
+                end
             end
             
             if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
                 doubleCheckCount = doubleCheckCount + 1
                 task.wait(math.random(500, 1000) / 1000) 
-            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
+            elseif #fullWord >= 10 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
                 doubleCheckCount = doubleCheckCount + 1
                 task.wait(math.random(400, 800) / 1000) 
             end
@@ -1395,9 +1399,11 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     
     if not isRunning then return end
     
-if #fullWord >= 15 then
+    if #fullWord >= 15 then
         logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
         task.wait(2)
+    elseif #fullWord <= 9 then
+        task.wait(math.random(100, 300) / 1000)
     elseif math.random(1, 100) <= 5 then
         logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
         task.wait(3)
