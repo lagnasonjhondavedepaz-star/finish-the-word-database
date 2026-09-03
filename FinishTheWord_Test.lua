@@ -813,7 +813,7 @@ targetLengthLabel.Parent = targetLengthContainer
 
 local function createTargetLengthButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.33, -27, 1, 0)
+    btn.Size = UDim2.new(0.5, -42, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
@@ -829,8 +829,7 @@ local function createTargetLengthButton(text)
 end
 
 local targetShortBtn = createTargetLengthButton("SHORT (1-9)")
-local targetMidBtn = createTargetLengthButton("MID (10-15)")
-local targetLongBtn = createTargetLengthButton("LONG (16+)")
+local targetLongBtn = createTargetLengthButton("LONG (10+)")
 
 -- REFRESH LOGIC FOR ALL HORIZONTAL BUTTONS
 local function refreshPriorityButtons()
@@ -846,8 +845,7 @@ end
 
 local function refreshTargetLengthButtons()
     targetShortBtn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
-    targetMidBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
-    targetLongBtn.BackgroundColor3 = (lengthMode == 3) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLongBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
 end
 
 -- CLICK CONNECTIONS
@@ -857,8 +855,7 @@ sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refres
 sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
 sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
 targetShortBtn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: SHORT", Color3.fromRGB(255, 255, 0)) end)
-targetMidBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: MID", Color3.fromRGB(255, 255, 0)) end)
-targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 3; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
+targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
 
 -- INITIALIZE UI
 refreshSuffixButtons()
@@ -1127,9 +1124,7 @@ local function matchesLengthMode(word)
     if lengthMode == 1 then
         return #word <= 9
     elseif lengthMode == 2 then
-        return #word >= 10 and #word <= 15
-    elseif lengthMode == 3 then
-        return #word >= 16
+        return #word >= 10
     end
     return true
 end
@@ -1252,29 +1247,38 @@ end
 local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
-    -- REACTION TIME
-    if #fullWord <= 9 then
-        task.wait(math.random(500, 1500) / 1000)
-    elseif #fullWord >= 10 and #fullWord <= 15 then
-        task.wait(math.random(1000, 2500) / 1000)
+    local willStartDelay = false
+    if #fullWord >= 10 then
+        willStartDelay = (math.random(1, 100) <= 75)
     else
-        task.wait(math.random(1800, 2400) / 1000)
+        willStartDelay = (math.random(1, 100) <= 50)
+    end
+    
+    if willStartDelay then
+        task.wait(2)
+    else
+        if prefixLength >= 2 then
+            task.wait(math.random(1500, 3000) / 1000)
+        else
+            task.wait(math.random(500, 1500) / 1000)
+        end
     end
     
     if not isRunning then return end
     
-    -- TYPO RATE
-    local typoRate = 5
-    if #fullWord >= 10 and #fullWord <= 15 then
-        typoRate = 15
+    local typoRate = 25
+    if #fullWord >= 15 then
+        typoRate = 45
     end
     
+    -- Disabled typos if isPlayingUsedWord is true
     local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
     local typoType = 1
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
+        -- 50% chance for Double-Press Correct Letter, 50% chance for Random Wrong Letter
         if math.random(1, 100) <= 50 then
             typoType = 1
         else
@@ -1283,20 +1287,8 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     end
     
     local doubleCheckCount = 0
-    local maxDoubleChecks = 1
-    local charsBeforePause = 3
-    
-    if #fullWord <= 9 then
-        maxDoubleChecks = 1
-        charsBeforePause = math.random(2, 4)
-    elseif #fullWord >= 10 and #fullWord <= 15 then
-        maxDoubleChecks = 2
-        charsBeforePause = math.random(3, 5)
-    else
-        maxDoubleChecks = 0
-        charsBeforePause = math.random(4, 7)
-    end
-    
+    local maxDoubleChecks = (#fullWord >= 15) and 2 or 1
+    local charsBeforePause = math.random(1, 3) 
     local currentStreak = 0
     
     for i = 1, #suffix do
@@ -1308,6 +1300,7 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
         if i == typoIndex then
             if typoType == 1 then
+                -- TYPE 1: Double press the correct character (Types 2 total, backspaces 1)
                 for t = 1, 2 do
                     if not isRunning then break end
                     local wrongKeycode = Enum.KeyCode[correctChar]
@@ -1333,6 +1326,7 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
                 skipNormalTyping = true 
                 
             elseif typoType == 2 then
+                -- TYPE 2: Random incorrect character (Types 1 wrong, backspaces 1)
                 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 local wrongChar = correctChar
                 while wrongChar == correctChar do
@@ -1370,45 +1364,41 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
             
             currentStreak = currentStreak + 1
             
-            -- KEYSTROKE PACING
             if currentStreak >= charsBeforePause then
-                if #fullWord >= 16 then
-                    task.wait(math.random(100, 200) / 1000)
-                elseif #fullWord >= 10 and #fullWord <= 15 then
-                    task.wait(math.random(100, 200) / 1000)
+                if #fullWord >= 15 then
+                    task.wait(math.random(200, 450) / 1000)
+                elseif #fullWord > 8 then
+                    task.wait(math.random(150, 300) / 1000)
                 else
-                    task.wait(math.random(80, 150) / 1000)
+                    task.wait(math.random(100, 250) / 1000)
                 end
                 currentStreak = 0
-                
-                if #fullWord <= 9 then
-                    charsBeforePause = math.random(2, 4)
-                elseif #fullWord >= 10 and #fullWord <= 15 then
-                    charsBeforePause = math.random(3, 5)
-                else
-                    charsBeforePause = math.random(4, 7)
-                end
+                charsBeforePause = math.random(1, 3)
             else
-                if #fullWord <= 9 then
-                    task.wait(math.random(30, 70) / 1000)
-                elseif #fullWord >= 10 and #fullWord <= 15 then
-                    task.wait(math.random(50, 90) / 1000)
-                else
-                    task.wait(math.random(60, 110) / 1000)
-                end
+                task.wait(math.random(40, 95) / 1000)
             end
             
-            -- DOUBLE CHECK / HESITATION
-            if #fullWord >= 10 and #fullWord <= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 20 then
+            if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
                 doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(300, 600) / 1000) 
+                task.wait(math.random(500, 1000) / 1000) 
+            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
+                doubleCheckCount = doubleCheckCount + 1
+                task.wait(math.random(400, 800) / 1000) 
             end
         end
     end
     
     if not isRunning then return end
     
--- SUBMISSION DELAY
+if #fullWord >= 15 then
+        logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
+        task.wait(2)
+    elseif math.random(1, 100) <= 5 then
+        logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
+        task.wait(3)
+    else
+        task.wait(math.random(400, 800) / 1000)
+    end
     
     if isRunning then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
@@ -1532,8 +1522,7 @@ task.spawn(function()
                             if string.sub(word, 1, #settledPrefix) == settledPrefix then
                                 local matchesLength = false
                                 if lengthMode == 1 and #word <= 9 then matchesLength = true end
-                                if lengthMode == 2 and #word >= 10 and #word <= 15 then matchesLength = true end
-                                if lengthMode == 3 and #word >= 16 then matchesLength = true end
+                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
                                 
                                 if usedWords[word] then
                                     table.insert(usedFallback, word)
