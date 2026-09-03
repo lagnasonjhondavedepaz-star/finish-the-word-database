@@ -378,56 +378,6 @@ end
 autoAnswerToggle.MouseButton1Click:Connect(toggleAutoAnswerState)
 miniAutoToggleBtn.MouseButton1Click:Connect(toggleAutoAnswerState)
 
--- Use Simple Word Toggle
-local useSimpleWordContainer = Instance.new("Frame")
-useSimpleWordContainer.Size = UDim2.new(1, 0, 0, 34)
-useSimpleWordContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-useSimpleWordContainer.BorderSizePixel = 0
-useSimpleWordContainer.Parent = settingsScroll
-
-local useSimpleWordLabel = Instance.new("TextLabel")
-useSimpleWordLabel.Size = UDim2.new(1, -110, 1, 0)
-useSimpleWordLabel.BackgroundTransparency = 1
-useSimpleWordLabel.Text = "📖 USE SIMPLE WORD"
-useSimpleWordLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-useSimpleWordLabel.Font = Enum.Font.GothamBold
-useSimpleWordLabel.TextSize = 10
-useSimpleWordLabel.TextXAlignment = Enum.TextXAlignment.Left
-useSimpleWordLabel.Parent = useSimpleWordContainer
-
-local useSimpleWordPadding = Instance.new("UIPadding")
-useSimpleWordPadding.PaddingLeft = UDim.new(0, 10)
-useSimpleWordPadding.Parent = useSimpleWordLabel
-
-local useSimpleWordToggle = Instance.new("TextButton")
-useSimpleWordToggle.Size = UDim2.new(0, 100, 0, 26)
-useSimpleWordToggle.Position = UDim2.new(1, -106, 0.5, -13)
-useSimpleWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100) -- Default Enabled
-useSimpleWordToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-useSimpleWordToggle.Font = Enum.Font.GothamBold
-useSimpleWordToggle.TextSize = 11
-useSimpleWordToggle.Text = "✓ ENABLED"
-useSimpleWordToggle.Parent = useSimpleWordContainer
-
-local useSimpleWordCorner = Instance.new("UICorner")
-useSimpleWordCorner.CornerRadius = UDim.new(0, 6)
-useSimpleWordCorner.Parent = useSimpleWordToggle
-
-local useSimpleWordEnabled = true
-
-useSimpleWordToggle.MouseButton1Click:Connect(function()
-    useSimpleWordEnabled = not useSimpleWordEnabled
-    if useSimpleWordEnabled then
-        useSimpleWordToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        useSimpleWordToggle.Text = "✓ ENABLED"
-        logMessage("Use Simple Word: ENABLED", Color3.fromRGB(0, 255, 0))
-    else
-        useSimpleWordToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
-        useSimpleWordToggle.Text = "✗ DISABLED"
-        logMessage("Use Simple Word: DISABLED", Color3.fromRGB(255, 150, 0))
-    end
-end)
-
 -- Trying Used Words Toggle
 local tryUsedWordContainer = Instance.new("Frame")
 tryUsedWordContainer.Size = UDim2.new(1, 0, 0, 34)
@@ -921,17 +871,16 @@ end)
 
 -- ASSIGN EXPLICIT LAYOUT ORDERS TO REORDER THE SETTINGS
 autoAnswerContainer.LayoutOrder = 1
-useSimpleWordContainer.LayoutOrder = 2
-tryUsedWordContainer.LayoutOrder = 3
-usedWordsLabel.LayoutOrder = 4
-priorityContainer.LayoutOrder = 5
-sortContainer.LayoutOrder = 6
-targetLengthContainer.LayoutOrder = 7
-customSuffixContainer.LayoutOrder = 8
-suffixLabel.LayoutOrder = 9
-suffixFrame.LayoutOrder = 10
-suffixOrderLabel.LayoutOrder = 11
-suffixOrderFrame.LayoutOrder = 12
+tryUsedWordContainer.LayoutOrder = 2
+usedWordsLabel.LayoutOrder = 3
+priorityContainer.LayoutOrder = 4
+sortContainer.LayoutOrder = 5
+targetLengthContainer.LayoutOrder = 6
+customSuffixContainer.LayoutOrder = 7
+suffixLabel.LayoutOrder = 8
+suffixFrame.LayoutOrder = 9
+suffixOrderLabel.LayoutOrder = 10
+suffixOrderFrame.LayoutOrder = 11
 
 local function createButton(text, bgColor, layoutOrder)
     local btn = Instance.new("TextButton")
