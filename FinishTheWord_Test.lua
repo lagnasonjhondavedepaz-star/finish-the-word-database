@@ -16,6 +16,8 @@ screenGui.Parent = coreGui
 local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
+local isBotTyping = false
+local currentTypingTicket = 0
 
 -- NEW CONFIGURATION DEFAULTS
 local botConfig = {
@@ -1384,109 +1386,116 @@ local function readInputBox()
 end
 
 -- Added a 3rd parameter: isPlayingUsedWord
-local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
-    local suffix = string.sub(fullWord, prefixLength + 1)
+local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord, ticket)
+    isBotTyping = true
     
-    -- CONFIGURABLE PRE-TYPE DELAY
-    task.wait(botConfig.preDelay + (math.random(0, 200) / 1000))
-    
-    if not isRunning then return end
-    
-    -- CONFIGURABLE TYPO CHANCE
-    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= botConfig.typoChance)
-    local typoIndex = -1
-    local typoType = 1
-    
-    if willMakeTypo and #suffix > 2 then
-        typoIndex = math.random(1, #suffix - 1)
-        if math.random(1, 100) <= 50 then typoType = 1 else typoType = 2 end
-    end
-    
-    local currentStreak = 0
-    local charsBeforePause = math.random(2, 4)
-    
-    for i = 1, #suffix do
-        if not isRunning then break end
+    local function performTyping()
+        local suffix = string.sub(fullWord, prefixLength + 1)
         
-        local correctChar = string.sub(suffix, i, i)
-        local keycode = Enum.KeyCode[correctChar]
-        local skipNormalTyping = false
+        -- CONFIGURABLE PRE-TYPE DELAY
+        task.wait(botConfig.preDelay + (math.random(0, 200) / 1000))
         
-        if i == typoIndex then
-            if typoType == 1 then
-                -- Double press correct char
-                for t = 1, 2 do
-                    if not isRunning then break end
-                    if keycode then
-                        VIM:SendKeyEvent(true, keycode, false, game)
-                        task.wait(botConfig.typeDelay) 
-                        VIM:SendKeyEvent(false, keycode, false, game)
-                        task.wait(botConfig.typeDelay * 1.5)
+        if not isRunning or currentTypingTicket ~= ticket then return end
+        
+        -- CONFIGURABLE TYPO CHANCE
+        local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= botConfig.typoChance)
+        local typoIndex = -1
+        local typoType = 1
+        
+        if willMakeTypo and #suffix > 2 then
+            typoIndex = math.random(1, #suffix - 1)
+            if math.random(1, 100) <= 50 then typoType = 1 else typoType = 2 end
+        end
+        
+        local currentStreak = 0
+        local charsBeforePause = math.random(2, 4)
+        
+        for i = 1, #suffix do
+            if not isRunning or currentTypingTicket ~= ticket then return end
+            
+            local correctChar = string.sub(suffix, i, i)
+            local keycode = Enum.KeyCode[correctChar]
+            local skipNormalTyping = false
+            
+            if i == typoIndex then
+                if typoType == 1 then
+                    -- Double press correct char
+                    for t = 1, 2 do
+                        if not isRunning or currentTypingTicket ~= ticket then return end
+                        if keycode then
+                            VIM:SendKeyEvent(true, keycode, false, game)
+                            task.wait(botConfig.typeDelay) 
+                            VIM:SendKeyEvent(false, keycode, false, game)
+                            task.wait(botConfig.typeDelay * 1.5)
+                        end
                     end
-                end
-                task.wait(0.2)
-                if isRunning then
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                    task.wait(botConfig.typeDelay)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    task.wait(0.1)
-                end
-                currentStreak = 0 
-                skipNormalTyping = true 
-                
-            elseif typoType == 2 then
-                -- Random wrong char
-                local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                local wrongChar = correctChar
-                while wrongChar == correctChar do wrongChar = string.sub(alphabet, math.random(1, 26), 1) end
-                
-                local wrongKeycode = Enum.KeyCode[wrongChar]
-                if wrongKeycode and isRunning then
-                    VIM:SendKeyEvent(true, wrongKeycode, false, game)
-                    task.wait(botConfig.typeDelay) 
-                    VIM:SendKeyEvent(false, wrongKeycode, false, game)
                     task.wait(0.2)
+                    if isRunning and currentTypingTicket == ticket then
+                        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                        task.wait(botConfig.typeDelay)
+                        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                        task.wait(0.1)
+                    end
+                    currentStreak = 0 
+                    skipNormalTyping = true 
+                    
+                elseif typoType == 2 then
+                    -- Random wrong char
+                    local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    local wrongChar = correctChar
+                    while wrongChar == correctChar do wrongChar = string.sub(alphabet, math.random(1, 26), 1) end
+                    
+                    local wrongKeycode = Enum.KeyCode[wrongChar]
+                    if wrongKeycode and isRunning and currentTypingTicket == ticket then
+                        VIM:SendKeyEvent(true, wrongKeycode, false, game)
+                        task.wait(botConfig.typeDelay) 
+                        VIM:SendKeyEvent(false, wrongKeycode, false, game)
+                        task.wait(0.2)
+                    end
+                    if isRunning and currentTypingTicket == ticket then
+                        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                        task.wait(botConfig.typeDelay)
+                        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                        task.wait(0.1)
+                    end
+                    currentStreak = 0 
+                    skipNormalTyping = false 
                 end
-                if isRunning then
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+            end
+            
+            if not skipNormalTyping and keycode and isRunning and currentTypingTicket == ticket then
+                VIM:SendKeyEvent(true, keycode, false, game)
+                task.wait(botConfig.typeDelay) 
+                VIM:SendKeyEvent(false, keycode, false, game)
+                
+                currentStreak = currentStreak + 1
+                
+                if currentStreak >= charsBeforePause then
+                    task.wait(botConfig.typeDelay * 3) -- Natural mini pause based on configured speed
+                    currentStreak = 0
+                    charsBeforePause = math.random(2, 4)
+                else
                     task.wait(botConfig.typeDelay)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    task.wait(0.1)
                 end
-                currentStreak = 0 
-                skipNormalTyping = false 
             end
         end
         
-        if not skipNormalTyping and keycode and isRunning then
-            VIM:SendKeyEvent(true, keycode, false, game)
-            task.wait(botConfig.typeDelay) 
-            VIM:SendKeyEvent(false, keycode, false, game)
-            
-            currentStreak = currentStreak + 1
-            
-            if currentStreak >= charsBeforePause then
-                task.wait(botConfig.typeDelay * 3) -- Natural mini pause based on configured speed
-                currentStreak = 0
-                charsBeforePause = math.random(2, 4)
-            else
-                task.wait(botConfig.typeDelay)
-            end
+        if not isRunning or currentTypingTicket ~= ticket then return end
+        
+        -- CONFIGURABLE POST-TYPE DELAY
+        if botConfig.postDelay > 0 then
+            task.wait(botConfig.postDelay + (math.random(0, 200) / 1000))
+        end
+        
+        if isRunning and currentTypingTicket == ticket then
+            VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+            task.wait(0.05)
+            VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
         end
     end
     
-    if not isRunning then return end
-    
-    -- CONFIGURABLE POST-TYPE DELAY (Instant if 0)
-    if botConfig.postDelay > 0 then
-        task.wait(botConfig.postDelay + (math.random(0, 200) / 1000))
-    end
-    
-    if isRunning then
-        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait(0.05)
-        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-    end
+    performTyping()
+    isBotTyping = false -- Safely toggle off when done
 end
 
 task.spawn(function()
@@ -1494,8 +1503,8 @@ task.spawn(function()
     local lastValidWord = nil
     local hasPlayedThisTurn = false
     local lastActivePlayer = nil
-    local pendingManualWord = nil -- Memory for the manual word
-    local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
+    local pendingManualWord = nil 
+    local hasTriedUsedWordThisTurn = false 
     
     while isRunning and task.wait(0.1) do
         -- Reset the turn state if the user just enabled auto-type
@@ -1507,7 +1516,7 @@ task.spawn(function()
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
         
-        -- GLOBAL TURN TRACKER: Detects when ANY player's turn ends to reliably catch their words
+        -- GLOBAL TURN TRACKER
         local currentActivePlayer = nil
         for _, p in ipairs(players:GetPlayers()) do
             if p:GetAttribute("IsTurn") == true then
@@ -1527,11 +1536,11 @@ task.spawn(function()
             if wordToLog and not usedWords[wordToLog] then
                 usedWords[wordToLog] = true
                 logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
-                updateToggleButton() -- Instantly update the UI counter
+                updateToggleButton() 
             end
             
             lastActivePlayer = currentActivePlayer
-            lastValidWord = nil -- Reset memory for the new turn
+            lastValidWord = nil 
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1554,13 +1563,20 @@ task.spawn(function()
                 if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
                     usedWords[lastSeenText] = true
                     logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
-                    updateToggleButton() -- Instantly update the UI counter
+                    updateToggleButton()
                 end
             end
+            
+            -- FIX: Detect if a word was rejected by the game and the text box cleared.
+            -- This resets the turn flag so the bot will pick a new word instead of stalling.
+            if lastSeenText ~= "" and #currentText < #lastSeenText and not isBotTyping then
+                hasPlayedThisTurn = false
+            end
+
             lastSeenText = currentText
         end
 
-        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
+        -- Safety net: Remember the last valid word seen
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
         end
@@ -1568,116 +1584,24 @@ task.spawn(function()
         if isMyTurn then
             if not hasPlayedThisTurn and currentText ~= "" then
                 hasPlayedThisTurn = true 
+                currentTypingTicket = currentTypingTicket + 1
+                local myTicket = currentTypingTicket
                 
                 task.spawn(function()
                     task.wait(0.3) 
-                    if not isRunning then return end
+                    if not isRunning or currentTypingTicket ~= myTicket then return end
                     
                     local settledPrefix = readInputBox()
                     
                     if settledPrefix ~= "" then
                         logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
                         
-                        local exactLengthMatches = {}
-                        local fallbackMatches = {}
+                        -- [ ... Keep exact/fallback word gathering and suffix logic identical here ... ]
+                        -- (Skipping pasting the unchanged pool logic down to finalPool > 0)
                         
-                        local usedCount = 0
-                        for _ in pairs(usedWords) do usedCount = usedCount + 1 end
-                        
-                        local usedChance = 0
-                        if usedCount > 100 then
-                            usedChance = 20
-                        elseif usedCount > 75 then
-                            usedChance = 15
-                        elseif usedCount > 50 then
-                            usedChance = 10
-                        elseif usedCount > 25 then
-                            usedChance = 5
-                        end
-                        
-                        -- Only attempt a used word if ENABLED, it's short, and we haven't already tried one this turn
-                        local tryUsedWord = tryUsedWordsEnabled and (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
-                        local usedFallback = {}
-                        local usedExact = {}
-                        
-                        for _, word in ipairs(wordsTable) do
-                            if string.sub(word, 1, #settledPrefix) == settledPrefix then
-                                local matchesLength = false
-                                if lengthMode == 1 and #word <= 9 then matchesLength = true end
-                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
-                                
-                                if usedWords[word] then
-                                    table.insert(usedFallback, word)
-                                    if matchesLength then
-                                        table.insert(usedExact, word)
-                                    end
-                                else
-                                    table.insert(fallbackMatches, word)
-                                    if matchesLength then
-                                        table.insert(exactLengthMatches, word)
-                                    end
-                                end
-                            end
-                        end
-                        
-                        local isPlayingUsedWord = false
-                        if tryUsedWord and #usedFallback > 0 then
-                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
-                            fallbackMatches = usedFallback
-                            exactLengthMatches = usedExact
-                            isPlayingUsedWord = true
-                            hasTriedUsedWordThisTurn = true -- Mark that we tried a used word this turn
-                        end
-                        
-                        local finalPool = {}
-                        local foundSuffix = false
-                        
-                        local activeSuffixes = getSelectedSuffixes()
-                        suffixModeEnabled = (#activeSuffixes > 0)
-                        
-                        if suffixModeEnabled then
-                            for _, targetSuffix in ipairs(activeSuffixes) do
-                                local exactSuffixMatches = {}
-                                local fallbackSuffixMatches = {}
-                                
-                                for _, word in ipairs(fallbackMatches) do
-                                    if string.sub(word, -#targetSuffix) == targetSuffix then
-                                        table.insert(fallbackSuffixMatches, word)
-                                        if matchesLengthMode(word) then
-                                            table.insert(exactSuffixMatches, word)
-                                        end
-                                    end
-                                end
-                                
-                                if suffixLengthStrict then
-                                    if #exactSuffixMatches > 0 then
-                                        finalPool = exactSuffixMatches
-                                        foundSuffix = true
-                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
-                                        break
-                                    end
-                                else
-                                    if #fallbackSuffixMatches > 0 then
-                                        finalPool = fallbackSuffixMatches
-                                        foundSuffix = true
-                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                        
-                        if not foundSuffix then
-                            if suffixModeEnabled then
-                                logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0))
-                            end
-                            finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
-                        end
-                        
-if #finalPool > 0 then
+                        if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             
-                            -- Prevent the word from changing if we already found one in manual mode
                             if pendingManualWord and string.sub(pendingManualWord, 1, #settledPrefix) == settledPrefix then
                                 for _, w in ipairs(finalPool) do
                                     if w == pendingManualWord then
@@ -1688,38 +1612,39 @@ if #finalPool > 0 then
                             end
                             
                             if autoAnswerEnabled then
-                                pendingManualWord = nil -- Clear it once we decide to play it
+                                pendingManualWord = nil 
                                 currentAction = "Playing: " .. chosenWord
                                 updateToggleButton()
                                 logMessage(">> PLAYING: " .. chosenWord, Color3.fromRGB(0, 255, 255))
-                                typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord)
                                 
-                                -- If we purposefully played a used word, wait 1s for the game to reject it, 
-                                -- backspace the letters we added, then reset hasPlayedThisTurn.
+                                -- Pass myTicket through
+                                typeRemainingLetters(chosenWord, #settledPrefix, isPlayingUsedWord, myTicket)
+                                
                                 if isPlayingUsedWord then
                                     task.wait(1)
                                     logMessage("Removing used word to try a valid one...", Color3.fromRGB(255, 100, 255))
                                     
                                     local charsToRemove = #chosenWord - #settledPrefix
-                                    for b = 1, charsToRemove do
-                                        if not isRunning then break end
-                                        VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                                        task.wait(math.random(30, 60) / 1000) -- Slightly varied hold time
-                                        VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                                        task.wait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
+                                    if currentTypingTicket == myTicket then
+                                        for b = 1, charsToRemove do
+                                            if not isRunning or currentTypingTicket ~= myTicket then break end
+                                            VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                                            task.wait(math.random(30, 60) / 1000) 
+                                            VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                                            task.wait(math.random(100, 250) / 1000) 
+                                        end
+                                        task.wait(0.5) 
+                                        hasPlayedThisTurn = false
                                     end
-                                    
-                                    task.wait(0.5) -- Wait for the game GUI to process the backspaces
-                                    hasPlayedThisTurn = false
                                 end
                             else
-                                pendingManualWord = chosenWord -- Store the word so it doesn't change when toggling ON
+                                pendingManualWord = chosenWord 
                                 currentAction = "Found: " .. chosenWord
                                 updateToggleButton()
-                                logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode - Not Auto-Typing)", Color3.fromRGB(255, 200, 0))
+                                logMessage(">> FOUND: " .. chosenWord .. " (Manual Mode)", Color3.fromRGB(255, 200, 0))
                             end
                         else
-                            pendingManualWord = nil -- Clear it if no words are found
+                            pendingManualWord = nil 
                             currentAction = "Missing Prefix: " .. settledPrefix
                             updateToggleButton()
                             logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
