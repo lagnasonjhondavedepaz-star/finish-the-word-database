@@ -1252,38 +1252,29 @@ end
 local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
+    -- REACTION TIME
     if #fullWord <= 9 then
         task.wait(math.random(500, 1500) / 1000)
+    elseif #fullWord >= 10 and #fullWord <= 15 then
+        task.wait(math.random(1000, 2500) / 1000)
     else
-        local willStartDelay = (#fullWord >= 10 and math.random(1, 100) <= 75)
-        if willStartDelay then
-            task.wait(2)
-        else
-            if prefixLength >= 2 then
-                task.wait(math.random(1500, 3000) / 1000)
-            else
-                task.wait(math.random(500, 1500) / 1000)
-            end
-        end
+        task.wait(math.random(1800, 2400) / 1000)
     end
     
     if not isRunning then return end
     
-    local typoRate = 25
-    if #fullWord <= 9 then
-        typoRate = 5
-    elseif #fullWord >= 15 then
-        typoRate = 45
+    -- TYPO RATE
+    local typoRate = 5
+    if #fullWord >= 10 and #fullWord <= 15 then
+        typoRate = 15
     end
     
-    -- Disabled typos if isPlayingUsedWord is true
     local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
     local typoType = 1
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
-        -- 50% chance for Double-Press Correct Letter, 50% chance for Random Wrong Letter
         if math.random(1, 100) <= 50 then
             typoType = 1
         else
@@ -1291,9 +1282,21 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         end
     end
     
-local doubleCheckCount = 0
-    local maxDoubleChecks = (#fullWord >= 15) and 2 or 1
-    local charsBeforePause = (#fullWord <= 9) and math.random(2, 4) or math.random(1, 3) 
+    local doubleCheckCount = 0
+    local maxDoubleChecks = 1
+    local charsBeforePause = 3
+    
+    if #fullWord <= 9 then
+        maxDoubleChecks = 1
+        charsBeforePause = math.random(2, 4)
+    elseif #fullWord >= 10 and #fullWord <= 15 then
+        maxDoubleChecks = 2
+        charsBeforePause = math.random(3, 5)
+    else
+        maxDoubleChecks = 0
+        charsBeforePause = math.random(4, 7)
+    end
+    
     local currentStreak = 0
     
     for i = 1, #suffix do
@@ -1305,7 +1308,6 @@ local doubleCheckCount = 0
         
         if i == typoIndex then
             if typoType == 1 then
-                -- TYPE 1: Double press the correct character (Types 2 total, backspaces 1)
                 for t = 1, 2 do
                     if not isRunning then break end
                     local wrongKeycode = Enum.KeyCode[correctChar]
@@ -1331,7 +1333,6 @@ local doubleCheckCount = 0
                 skipNormalTyping = true 
                 
             elseif typoType == 2 then
-                -- TYPE 2: Random incorrect character (Types 1 wrong, backspaces 1)
                 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 local wrongChar = correctChar
                 while wrongChar == correctChar do
@@ -1369,47 +1370,45 @@ local doubleCheckCount = 0
             
             currentStreak = currentStreak + 1
             
+            -- KEYSTROKE PACING
             if currentStreak >= charsBeforePause then
-                if #fullWord >= 15 then
-                    task.wait(math.random(200, 450) / 1000)
-                elseif #fullWord >= 10 then
-                    task.wait(math.random(150, 300) / 1000)
+                if #fullWord >= 16 then
+                    task.wait(math.random(100, 200) / 1000)
+                elseif #fullWord >= 10 and #fullWord <= 15 then
+                    task.wait(math.random(100, 200) / 1000)
                 else
                     task.wait(math.random(80, 150) / 1000)
                 end
                 currentStreak = 0
-                charsBeforePause = (#fullWord <= 9) and math.random(2, 4) or math.random(1, 3)
+                
+                if #fullWord <= 9 then
+                    charsBeforePause = math.random(2, 4)
+                elseif #fullWord >= 10 and #fullWord <= 15 then
+                    charsBeforePause = math.random(3, 5)
+                else
+                    charsBeforePause = math.random(4, 7)
+                end
             else
                 if #fullWord <= 9 then
                     task.wait(math.random(30, 70) / 1000)
+                elseif #fullWord >= 10 and #fullWord <= 15 then
+                    task.wait(math.random(50, 90) / 1000)
                 else
-                    task.wait(math.random(40, 95) / 1000)
+                    task.wait(math.random(60, 110) / 1000)
                 end
             end
             
-            if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
+            -- DOUBLE CHECK / HESITATION
+            if #fullWord >= 10 and #fullWord <= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 20 then
                 doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(500, 1000) / 1000) 
-            elseif #fullWord >= 10 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
-                doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(400, 800) / 1000) 
+                task.wait(math.random(300, 600) / 1000) 
             end
         end
     end
     
     if not isRunning then return end
     
-    if #fullWord >= 15 then
-        logMessage("15+ letters! Waiting 2 seconds before enter...", Color3.fromRGB(255, 255, 0))
-        task.wait(2)
-    elseif #fullWord <= 9 then
-        task.wait(math.random(100, 300) / 1000)
-    elseif math.random(1, 100) <= 5 then
-        logMessage("Distracted! Waiting 3 seconds...", Color3.fromRGB(255, 150, 0))
-        task.wait(3)
-    else
-        task.wait(math.random(400, 800) / 1000)
-    end
+-- SUBMISSION DELAY
     
     if isRunning then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
