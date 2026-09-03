@@ -1596,8 +1596,91 @@ task.spawn(function()
                     if settledPrefix ~= "" then
                         logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
                         
-                        -- [ ... Keep exact/fallback word gathering and suffix logic identical here ... ]
-                        -- (Skipping pasting the unchanged pool logic down to finalPool > 0)
+                        local exactLengthMatches = {}
+                        local fallbackMatches = {}
+                        
+                        local usedCount = 0
+                        for _ in pairs(usedWords) do usedCount = usedCount + 1 end
+                        
+                        local usedChance = 0
+                        if usedCount > 100 then
+                            usedChance = 20
+                        elseif usedCount > 75 then
+                            usedChance = 15
+                        elseif usedCount > 50 then
+                            usedChance = 10
+                        elseif usedCount > 25 then
+                            usedChance = 5
+                        end
+                        
+                        local tryUsedWord = tryUsedWordsEnabled and (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        local usedFallback = {}
+                        local usedExact = {}
+                        
+                        for _, word in ipairs(wordsTable) do
+                            if string.sub(word, 1, #settledPrefix) == settledPrefix then
+                                local matchesLength = false
+                                if lengthMode == 1 and #word <= 9 then matchesLength = true end
+                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
+                                
+                                if usedWords[word] then
+                                    table.insert(usedFallback, word)
+                                    if matchesLength then table.insert(usedExact, word) end
+                                else
+                                    table.insert(fallbackMatches, word)
+                                    if matchesLength then table.insert(exactLengthMatches, word) end
+                                end
+                            end
+                        end
+                        
+                        local isPlayingUsedWord = false
+                        if tryUsedWord and #usedFallback > 0 then
+                            logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
+                            fallbackMatches = usedFallback
+                            exactLengthMatches = usedExact
+                            isPlayingUsedWord = true
+                            hasTriedUsedWordThisTurn = true 
+                        end
+                        
+                        local finalPool = {}
+                        local foundSuffix = false
+                        local activeSuffixes = getSelectedSuffixes()
+                        suffixModeEnabled = (#activeSuffixes > 0)
+                        
+                        if suffixModeEnabled then
+                            for _, targetSuffix in ipairs(activeSuffixes) do
+                                local exactSuffixMatches = {}
+                                local fallbackSuffixMatches = {}
+                                
+                                for _, word in ipairs(fallbackMatches) do
+                                    if string.sub(word, -#targetSuffix) == targetSuffix then
+                                        table.insert(fallbackSuffixMatches, word)
+                                        if matchesLengthMode(word) then table.insert(exactSuffixMatches, word) end
+                                    end
+                                end
+                                
+                                if suffixLengthStrict then
+                                    if #exactSuffixMatches > 0 then
+                                        finalPool = exactSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
+                                        break
+                                    end
+                                else
+                                    if #fallbackSuffixMatches > 0 then
+                                        finalPool = fallbackSuffixMatches
+                                        foundSuffix = true
+                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                        
+                        if not foundSuffix then
+                            if suffixModeEnabled then logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0)) end
+                            finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
+                        end
                         
                         if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
