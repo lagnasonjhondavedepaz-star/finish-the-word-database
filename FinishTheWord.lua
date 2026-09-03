@@ -17,6 +17,14 @@ local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
 
+-- NEW CONFIGURATION DEFAULTS
+local botConfig = {
+    preDelay = 1.0,    -- Delay before starting to type (Seconds)
+    typeDelay = 0.05,  -- Delay per keystroke (Seconds)
+    typoChance = 25,   -- Probability of making a typo (%)
+    postDelay = 0.0    -- Delay before pressing Enter (Seconds) -- DEFAULT CHANGED TO 0.0
+}
+
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
 screenGui.AncestryChanged:Connect(function(_, parent)
     if not parent then
@@ -224,7 +232,7 @@ navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
 local function createNavTab(text)
     local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(0, 110, 0, 28)
+    tab.Size = UDim2.new(0.31, 0, 0, 28) -- Changed to 0.31 scale to fit 3 tabs
     tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tab.TextColor3 = Color3.fromRGB(150, 150, 150)
     tab.Font = Enum.Font.GothamBold
@@ -240,6 +248,7 @@ local function createNavTab(text)
 end
 
 local settingsTab = createNavTab("⚙ SETTINGS")
+local configTab = createNavTab("🔧 CONFIGS") -- New Configs Tab
 local consoleTab = createNavTab("📋 CONSOLE")
 
 -- CONTENT PANELS
@@ -252,6 +261,16 @@ settingsPanel.ClipsDescendants = true
 settingsPanel.Visible = false
 settingsPanel.Parent = mainFrame
 
+-- NEW CONFIG PANEL
+local configPanel = Instance.new("Frame")
+configPanel.Size = UDim2.new(1, 0, 1, -82)
+configPanel.Position = UDim2.new(0, 0, 0, 67)
+configPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+configPanel.BorderSizePixel = 0
+configPanel.ClipsDescendants = true
+configPanel.Visible = false
+configPanel.Parent = mainFrame
+
 local consolePanel = Instance.new("Frame")
 consolePanel.Size = UDim2.new(1, 0, 1, -82)
 consolePanel.Position = UDim2.new(0, 0, 0, 67)
@@ -261,34 +280,155 @@ consolePanel.ClipsDescendants = true
 consolePanel.Visible = true
 consolePanel.Parent = mainFrame
 
--- TAB SWITCHING
+-- UPDATED TAB SWITCHING
 local currentTab = "console"
 
 local function switchTab(tabName)
     currentTab = tabName
     settingsPanel.Visible = (tabName == "settings")
+    configPanel.Visible = (tabName == "configs")
     consolePanel.Visible = (tabName == "console")
     
-    -- Update tab colors
-    if tabName == "settings" then
-        settingsTab.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-        settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-    else
-        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-        consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
-        consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
+    local activeColor = Color3.fromRGB(0, 180, 100)
+    local inactiveColor = Color3.fromRGB(50, 50, 50)
+    
+    settingsTab.BackgroundColor3 = (tabName == "settings") and activeColor or inactiveColor
+    settingsTab.TextColor3 = (tabName == "settings") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+    
+    configTab.BackgroundColor3 = (tabName == "configs") and Color3.fromRGB(200, 150, 0) or inactiveColor
+    configTab.TextColor3 = (tabName == "configs") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
+
+    consoleTab.BackgroundColor3 = (tabName == "console") and Color3.fromRGB(0, 150, 200) or inactiveColor
+    consoleTab.TextColor3 = (tabName == "console") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
 end
 
-settingsTab.MouseButton1Click:Connect(function()
-    switchTab("settings")
-end)
+settingsTab.MouseButton1Click:Connect(function() switchTab("settings") end)
+configTab.MouseButton1Click:Connect(function() switchTab("configs") end)
+consoleTab.MouseButton1Click:Connect(function() switchTab("console") end)
 
-consoleTab.MouseButton1Click:Connect(function()
-    switchTab("console")
+-- CONFIGS PANEL CONTENT (SLIDERS)
+local configScroll = Instance.new("ScrollingFrame")
+configScroll.Size = UDim2.new(1, 0, 1, 0)
+configScroll.BackgroundTransparency = 1
+configScroll.BorderSizePixel = 0
+configScroll.ScrollBarThickness = 4
+configScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+configScroll.Parent = configPanel
+
+local configPadding = Instance.new("UIPadding")
+configPadding.PaddingLeft = UDim.new(0, 12)
+configPadding.PaddingRight = UDim.new(0, 12)
+configPadding.PaddingTop = UDim.new(0, 12)
+configPadding.Parent = configScroll
+
+local configLayout = Instance.new("UIListLayout")
+configLayout.Parent = configScroll
+configLayout.SortOrder = Enum.SortOrder.LayoutOrder
+configLayout.Padding = UDim.new(0, 15)
+
+local sliderResetFunctions = {}
+
+local function createSlider(parent, text, min, max, default, formatStr, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 45)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. string.format(formatStr, default)
+    label.TextColor3 = Color3.fromRGB(0, 255, 150)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    local track = Instance.new("TextButton")
+    track.Size = UDim2.new(1, 0, 0, 12)
+    track.Position = UDim2.new(0, 0, 0, 25)
+    track.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    track.Text = ""
+    track.AutoButtonColor = false
+    track.Parent = container
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(0, 6)
+    trackCorner.Parent = track
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    fill.Parent = track
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 6)
+    fillCorner.Parent = fill
+
+    -- Function to programmatically set the slider's value & UI
+    local function setVisual(val)
+        local pos = math.clamp((val - min) / (max - min), 0, 1)
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        label.Text = text .. ": " .. string.format(formatStr, val)
+        callback(val)
+    end
+
+    local dragging = false
+    local function update(input)
+        local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        local val = min + ((max - min) * pos)
+        setVisual(val)
+    end
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; update(input)
+        end
+    end)
+    
+    userInput.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    
+    userInput.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            update(input)
+        end
+    end)
+    
+    -- Store reset function for the defaults button
+    table.insert(sliderResetFunctions, function()
+        setVisual(default)
+    end)
+    
+    return container
+end
+
+-- Initialize the 4 main behavior sliders with easier-to-understand labels
+createSlider(configScroll, "Delay Before Typing", 0, 5, botConfig.preDelay, "%.1fs", function(v) botConfig.preDelay = v end)
+createSlider(configScroll, "Typing Speed (Per Letter)", 0, 0.3, botConfig.typeDelay, "%.3fs", function(v) botConfig.typeDelay = v end)
+createSlider(configScroll, "Typo Probability", 0, 100, botConfig.typoChance, "%d%%", function(v) botConfig.typoChance = v end)
+createSlider(configScroll, "Delay Before Enter", 0, 5, botConfig.postDelay, "%.1fs", function(v) botConfig.postDelay = v end)
+
+-- RESET TO DEFAULTS BUTTON
+local resetConfigBtn = Instance.new("TextButton")
+resetConfigBtn.Size = UDim2.new(1, 0, 0, 28)
+resetConfigBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+resetConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetConfigBtn.Font = Enum.Font.GothamBold
+resetConfigBtn.TextSize = 10
+resetConfigBtn.Text = "↺ RESET TO DEFAULTS"
+resetConfigBtn.LayoutOrder = 10
+resetConfigBtn.Parent = configScroll
+
+local resetConfigCorner = Instance.new("UICorner")
+resetConfigCorner.CornerRadius = UDim.new(0, 5)
+resetConfigCorner.Parent = resetConfigBtn
+
+resetConfigBtn.MouseButton1Click:Connect(function()
+    for _, resetFn in ipairs(sliderResetFunctions) do
+        resetFn()
+    end
 end)
 
 -- SETTINGS PANEL CONTENT
@@ -1247,49 +1387,23 @@ end
 local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
-    local willStartDelay = false
-    if #fullWord >= 10 then
-        willStartDelay = (math.random(1, 100) <= 75)
-    else
-        willStartDelay = (math.random(1, 100) <= 50)
-    end
-    
-    if willStartDelay then
-        task.wait(2)
-    else
-        if prefixLength >= 2 then
-            task.wait(math.random(1500, 3000) / 1000)
-        else
-            task.wait(math.random(500, 1500) / 1000)
-        end
-    end
+    -- CONFIGURABLE PRE-TYPE DELAY
+    task.wait(botConfig.preDelay + (math.random(0, 200) / 1000))
     
     if not isRunning then return end
     
-    local typoRate = 25
-    if #fullWord >= 15 then
-        typoRate = 45
-    end
-    
-    -- Disabled typos if isPlayingUsedWord is true
-    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
+    -- CONFIGURABLE TYPO CHANCE
+    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= botConfig.typoChance)
     local typoIndex = -1
     local typoType = 1
     
     if willMakeTypo and #suffix > 2 then
         typoIndex = math.random(1, #suffix - 1)
-        -- 50% chance for Double-Press Correct Letter, 50% chance for Random Wrong Letter
-        if math.random(1, 100) <= 50 then
-            typoType = 1
-        else
-            typoType = 2
-        end
+        if math.random(1, 100) <= 50 then typoType = 1 else typoType = 2 end
     end
     
-    local doubleCheckCount = 0
-    local maxDoubleChecks = (#fullWord >= 15) and 2 or 1
-    local charsBeforePause = math.random(1, 3) 
     local currentStreak = 0
+    local charsBeforePause = math.random(2, 4)
     
     for i = 1, #suffix do
         if not isRunning then break end
@@ -1300,58 +1414,45 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
         if i == typoIndex then
             if typoType == 1 then
-                -- TYPE 1: Double press the correct character (Types 2 total, backspaces 1)
+                -- Double press correct char
                 for t = 1, 2 do
                     if not isRunning then break end
-                    local wrongKeycode = Enum.KeyCode[correctChar]
-                    if wrongKeycode then
-                        VIM:SendKeyEvent(true, wrongKeycode, false, game)
-                        task.wait(math.random(20, 50) / 1000) 
-                        VIM:SendKeyEvent(false, wrongKeycode, false, game)
-                        task.wait(math.random(60, 150) / 1000)
+                    if keycode then
+                        VIM:SendKeyEvent(true, keycode, false, game)
+                        task.wait(botConfig.typeDelay) 
+                        VIM:SendKeyEvent(false, keycode, false, game)
+                        task.wait(botConfig.typeDelay * 1.5)
                     end
                 end
-                
-                task.wait(math.random(250, 500) / 1000)
-                
+                task.wait(0.2)
                 if isRunning then
                     VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                    task.wait(math.random(20, 40) / 1000)
+                    task.wait(botConfig.typeDelay)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    task.wait(math.random(80, 150) / 1000)
+                    task.wait(0.1)
                 end
-                
-                task.wait(math.random(150, 250) / 1000)
                 currentStreak = 0 
                 skipNormalTyping = true 
                 
             elseif typoType == 2 then
-                -- TYPE 2: Random incorrect character (Types 1 wrong, backspaces 1)
+                -- Random wrong char
                 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 local wrongChar = correctChar
-                while wrongChar == correctChar do
-                    local rIndex = math.random(1, 26)
-                    wrongChar = string.sub(alphabet, rIndex, rIndex)
-                end
+                while wrongChar == correctChar do wrongChar = string.sub(alphabet, math.random(1, 26), 1) end
                 
                 local wrongKeycode = Enum.KeyCode[wrongChar]
                 if wrongKeycode and isRunning then
                     VIM:SendKeyEvent(true, wrongKeycode, false, game)
-                    task.wait(math.random(20, 50) / 1000) 
+                    task.wait(botConfig.typeDelay) 
                     VIM:SendKeyEvent(false, wrongKeycode, false, game)
-                    task.wait(math.random(60, 150) / 1000)
+                    task.wait(0.2)
                 end
-                
-                task.wait(math.random(250, 500) / 1000)
-                
                 if isRunning then
                     VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                    task.wait(math.random(20, 40) / 1000)
+                    task.wait(botConfig.typeDelay)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    task.wait(math.random(80, 150) / 1000)
+                    task.wait(0.1)
                 end
-                
-                task.wait(math.random(150, 250) / 1000)
                 currentStreak = 0 
                 skipNormalTyping = false 
             end
@@ -1359,37 +1460,28 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
         if not skipNormalTyping and keycode and isRunning then
             VIM:SendKeyEvent(true, keycode, false, game)
-            task.wait(math.random(20, 50) / 1000) 
+            task.wait(botConfig.typeDelay) 
             VIM:SendKeyEvent(false, keycode, false, game)
             
             currentStreak = currentStreak + 1
             
             if currentStreak >= charsBeforePause then
-                if #fullWord >= 15 then
-                    task.wait(math.random(200, 450) / 1000)
-                elseif #fullWord > 8 then
-                    task.wait(math.random(150, 300) / 1000)
-                else
-                    task.wait(math.random(100, 250) / 1000)
-                end
+                task.wait(botConfig.typeDelay * 3) -- Natural mini pause based on configured speed
                 currentStreak = 0
-                charsBeforePause = math.random(1, 3)
+                charsBeforePause = math.random(2, 4)
             else
-                task.wait(math.random(40, 95) / 1000)
-            end
-            
-            if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
-                doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(500, 1000) / 1000) 
-            elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
-                doubleCheckCount = doubleCheckCount + 1
-                task.wait(math.random(400, 800) / 1000) 
+                task.wait(botConfig.typeDelay)
             end
         end
     end
     
     if not isRunning then return end
-        
+    
+    -- CONFIGURABLE POST-TYPE DELAY (Instant if 0)
+    if botConfig.postDelay > 0 then
+        task.wait(botConfig.postDelay + (math.random(0, 200) / 1000))
+    end
+    
     if isRunning then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
         task.wait(0.05)
