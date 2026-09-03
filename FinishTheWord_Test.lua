@@ -22,7 +22,7 @@ local botConfig = {
     preDelay = 1.0,    -- Delay before starting to type (Seconds)
     typeDelay = 0.05,  -- Delay per keystroke (Seconds)
     typoChance = 25,   -- Probability of making a typo (%)
-    postDelay = 0.5    -- Delay before pressing Enter (Seconds)
+    postDelay = 0.0    -- Delay before pressing Enter (Seconds) -- DEFAULT CHANGED TO 0.0
 }
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
@@ -326,6 +326,8 @@ configLayout.Parent = configScroll
 configLayout.SortOrder = Enum.SortOrder.LayoutOrder
 configLayout.Padding = UDim.new(0, 15)
 
+local sliderResetFunctions = {}
+
 local function createSlider(parent, text, min, max, default, formatStr, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 45)
@@ -361,13 +363,19 @@ local function createSlider(parent, text, min, max, default, formatStr, callback
     fillCorner.CornerRadius = UDim.new(0, 6)
     fillCorner.Parent = fill
 
+    -- Function to programmatically set the slider's value & UI
+    local function setVisual(val)
+        local pos = math.clamp((val - min) / (max - min), 0, 1)
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        label.Text = text .. ": " .. string.format(formatStr, val)
+        callback(val)
+    end
+
     local dragging = false
     local function update(input)
         local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-        fill.Size = UDim2.new(pos, 0, 1, 0)
         local val = min + ((max - min) * pos)
-        label.Text = text .. ": " .. string.format(formatStr, val)
-        callback(val)
+        setVisual(val)
     end
 
     track.InputBegan:Connect(function(input)
@@ -388,14 +396,40 @@ local function createSlider(parent, text, min, max, default, formatStr, callback
         end
     end)
     
+    -- Store reset function for the defaults button
+    table.insert(sliderResetFunctions, function()
+        setVisual(default)
+    end)
+    
     return container
 end
 
--- Initialize the 4 main behavior sliders
-createSlider(configScroll, "Pre-Type Delay", 0, 5, botConfig.preDelay, "%.1fs", function(v) botConfig.preDelay = v end)
-createSlider(configScroll, "Typing Speed (Delay per Key)", 0, 0.3, botConfig.typeDelay, "%.3fs", function(v) botConfig.typeDelay = v end)
-createSlider(configScroll, "Typo Chance", 0, 100, botConfig.typoChance, "%d%%", function(v) botConfig.typoChance = v end)
-createSlider(configScroll, "Post-Type Delay", 0, 5, botConfig.postDelay, "%.1fs", function(v) botConfig.postDelay = v end)
+-- Initialize the 4 main behavior sliders with easier-to-understand labels
+createSlider(configScroll, "Delay Before Typing", 0, 5, botConfig.preDelay, "%.1fs", function(v) botConfig.preDelay = v end)
+createSlider(configScroll, "Typing Speed (Per Letter)", 0, 0.3, botConfig.typeDelay, "%.3fs", function(v) botConfig.typeDelay = v end)
+createSlider(configScroll, "Typo Probability", 0, 100, botConfig.typoChance, "%d%%", function(v) botConfig.typoChance = v end)
+createSlider(configScroll, "Delay Before Enter", 0, 5, botConfig.postDelay, "%.1fs", function(v) botConfig.postDelay = v end)
+
+-- RESET TO DEFAULTS BUTTON
+local resetConfigBtn = Instance.new("TextButton")
+resetConfigBtn.Size = UDim2.new(1, 0, 0, 28)
+resetConfigBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+resetConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetConfigBtn.Font = Enum.Font.GothamBold
+resetConfigBtn.TextSize = 10
+resetConfigBtn.Text = "↺ RESET TO DEFAULTS"
+resetConfigBtn.LayoutOrder = 10
+resetConfigBtn.Parent = configScroll
+
+local resetConfigCorner = Instance.new("UICorner")
+resetConfigCorner.CornerRadius = UDim.new(0, 5)
+resetConfigCorner.Parent = resetConfigBtn
+
+resetConfigBtn.MouseButton1Click:Connect(function()
+    for _, resetFn in ipairs(sliderResetFunctions) do
+        resetFn()
+    end
+end)
 
 -- SETTINGS PANEL CONTENT
 local settingsScroll = Instance.new("ScrollingFrame")
@@ -1443,8 +1477,10 @@ local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     
     if not isRunning then return end
     
-    -- CONFIGURABLE POST-TYPE DELAY (Restored)
-    task.wait(botConfig.postDelay + (math.random(0, 200) / 1000))
+    -- CONFIGURABLE POST-TYPE DELAY (Instant if 0)
+    if botConfig.postDelay > 0 then
+        task.wait(botConfig.postDelay + (math.random(0, 200) / 1000))
+    end
     
     if isRunning then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
