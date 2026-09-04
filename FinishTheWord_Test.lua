@@ -1457,6 +1457,8 @@ task.spawn(function()
     local pendingManualWord = nil -- Memory for the manual word
     local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
     
+    local cachedKeyboard = nil -- Caches the keyboard to force visibility
+    
     while isRunning and task.wait(0.1) do
         -- Reset the turn state if the user just enabled auto-type
         if forceReplayThisTurn then
@@ -1466,6 +1468,45 @@ task.spawn(function()
         
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
+        
+        -- FORCE KEYBOARD VISIBILITY DURING YOUR TURN
+        if isMyTurn then
+            local pGui = localPlayer:FindFirstChild("PlayerGui")
+            local sg = pGui and pGui:FindFirstChild("ScreenGui")
+            
+            if sg then
+                -- Helper function to force all parent containers to be visible
+                local function forceVisible(guiObj)
+                    local curr = guiObj
+                    while curr and curr ~= sg do
+                        if curr:IsA("GuiObject") and not curr.Visible then
+                            curr.Visible = true
+                        end
+                        curr = curr.Parent
+                    end
+                end
+
+                if cachedKeyboard and cachedKeyboard:IsDescendantOf(sg) then
+                    forceVisible(cachedKeyboard)
+                else
+                    local foundEnter, foundBack
+                    -- Deep search for the custom GUI keyboard buttons
+                    for _, obj in ipairs(sg:GetDescendants()) do
+                        if obj:IsA("TextButton") then
+                            local txt = string.lower(obj.Text or "")
+                            local name = string.lower(obj.Name or "")
+                            if txt == "enter" or name == "enter" then foundEnter = obj end
+                            if txt == "back" or name == "back" then foundBack = obj end
+                        end
+                    end
+                    
+                    if foundEnter and foundBack then
+                        cachedKeyboard = foundEnter
+                        forceVisible(cachedKeyboard)
+                    end
+                end
+            end
+        end
         
         -- GLOBAL TURN TRACKER: Detects when ANY player's turn ends to reliably catch their words
         local currentActivePlayer = nil
@@ -1634,7 +1675,7 @@ task.spawn(function()
                             finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
                         end
                         
-if #finalPool > 0 then
+                        if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             
                             -- Prevent the word from changing if we already found one in manual mode
