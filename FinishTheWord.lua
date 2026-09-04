@@ -1243,6 +1243,58 @@ local function readInputBox()
     return fullText
 end
 
+local function isVisible(gui)
+    local current = gui
+    while current and current:IsA("GuiObject") do
+        if not current.Visible then return false end
+        current = current.Parent
+    end
+    return true
+end
+
+local function pressKey(charStr, keycode, holdTime)
+    if not isRunning then return end
+    charStr = string.lower(charStr)
+    
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    local sg = pGui and pGui:FindFirstChild("ScreenGui")
+    local targetBtn = nil
+    
+    -- Hunt for the visible GUI key in the ScreenGui
+    if sg then
+        for _, obj in ipairs(sg:GetDescendants()) do
+            if obj:IsA("TextButton") and isVisible(obj) then
+                local txt = string.match(string.lower(obj.Text), "^%s*(.-)%s*$") or ""
+                local name = string.lower(obj.Name)
+                if txt == charStr or name == charStr then
+                    targetBtn = obj
+                    break
+                end
+            end
+        end
+    end
+    
+    if targetBtn then
+        -- Simulate a mobile screen tap exactly over the GUI element
+        local absPos = targetBtn.AbsolutePosition
+        local absSize = targetBtn.AbsoluteSize
+        local guiInset = game:GetService("GuiService"):GetGuiInset()
+        local centerX = absPos.X + (absSize.X / 2)
+        local centerY = absPos.Y + (absSize.Y / 2) + guiInset.Y
+        
+        VIM:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+        task.wait(holdTime or 0.03)
+        VIM:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+    else
+        -- Fallback to invisible hardware spoofing if UI is missing
+        if keycode then
+            VIM:SendKeyEvent(true, keycode, false, game)
+            task.wait(holdTime or 0.03)
+            VIM:SendKeyEvent(false, keycode, false, game)
+        end
+    end
+end
+
 -- Added a 3rd parameter: isPlayingUsedWord
 local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
