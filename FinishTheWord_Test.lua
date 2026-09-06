@@ -1640,13 +1640,13 @@ task.spawn(function()
                             usedChance = 5
                         end
                         
-                        -- Only attempt a used word if ENABLED, it's 6 letters or fewer, and we haven't already tried one this turn
+                        -- Only attempt a used word if ENABLED, it's short (1-9 letters total), and we haven't already tried one this turn
                         local tryUsedWord = tryUsedWordsEnabled and lengthMode == 1 and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
                         
                         for _, word in ipairs(wordsTable) do
                             if string.sub(word, 1, #settledPrefix) == settledPrefix then
-                                if usedWords[word] and #word <= 6 then
+                                if usedWords[word] then
                                     table.insert(usedFallback, word)
                                 else
                                     table.insert(fallbackMatches, word)
