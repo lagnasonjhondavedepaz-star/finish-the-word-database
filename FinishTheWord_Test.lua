@@ -63,6 +63,7 @@ livesPadding.PaddingRight = UDim.new(0, 10)
 livesPadding.Parent = livesIndicator
 
 local livesKeywords = {"life", "lives", "heart", "hearts", "health", "hp"}
+local syncLengthModeWithLives
 
 -- Custom visibility check to avoid conflicts with the existing isVisible function
 local function isNodeVisible(gui)
@@ -141,6 +142,9 @@ task.spawn(function()
     while isRunning and task.wait(0.5) do
         local currentLives = getLivesCount()
         livesIndicator.Text = "❤️ LIVES: " .. tostring(currentLives)
+        if syncLengthModeWithLives then
+            syncLengthModeWithLives(currentLives)
+        end
         
         if type(currentLives) == "number" then
             if currentLives > 2 then
@@ -964,6 +968,21 @@ local function refreshTargetLengthButtons()
     targetLen1Btn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
     targetLen2Btn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
     targetLen3Btn.BackgroundColor3 = (lengthMode == 3) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+end
+
+syncLengthModeWithLives = function(currentLives)
+    local newLengthMode
+    if currentLives == 2 then
+        newLengthMode = 1
+    elseif currentLives == 1 then
+        newLengthMode = 2
+    end
+
+    if newLengthMode and lengthMode ~= newLengthMode then
+        lengthMode = newLengthMode
+        refreshTargetLengthButtons()
+        logMessage("Heart tracker selected TARGET LENGTH: " .. (newLengthMode == 1 and "1-9" or "10-19"), Color3.fromRGB(255, 255, 0))
+    end
 end
 
 -- CLICK CONNECTIONS
