@@ -49,6 +49,7 @@ livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
 livesIndicator.Font = Enum.Font.GothamBold
 livesIndicator.TextSize = 11
 livesIndicator.Text = "❤️ LIVES: -"
+livesIndicator.Visible = false
 livesIndicator.AutomaticSize = Enum.AutomaticSize.X
 livesIndicator.LayoutOrder = 0 -- Keeps it on the far left of the container
 livesIndicator.Parent = topButtonsContainer
@@ -142,6 +143,7 @@ task.spawn(function()
     while isRunning and task.wait(0.5) do
         local currentLives = getLivesCount()
         livesIndicator.Text = "❤️ LIVES: " .. tostring(currentLives)
+        livesIndicator.Visible = currentLives == 1 or currentLives == 2
         if syncLengthModeWithLives then
             syncLengthModeWithLives(currentLives)
         end
