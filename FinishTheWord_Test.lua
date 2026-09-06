@@ -973,6 +973,7 @@ local function refreshTargetLengthButtons()
 end
 
 syncLengthModeWithLives = function(currentLives)
+    currentLives = tonumber(currentLives)
     local newLengthMode
     if currentLives == 2 then
         newLengthMode = 1
