@@ -1497,6 +1497,7 @@ end
 task.spawn(function()
     local lastSeenText = ""
     local lastValidWord = nil
+    local longestTurnText = ""
     local hasPlayedThisTurn = false
     local lastActivePlayer = nil
     local pendingManualWord = nil -- Memory for the manual word
@@ -1564,8 +1565,8 @@ task.spawn(function()
 
         if currentActivePlayer ~= lastActivePlayer then
             local wordToLog = nil
-            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
-                wordToLog = lastSeenText
+            if longestTurnText ~= "" then
+                wordToLog = longestTurnText
             elseif lastValidWord and validWordsDict[lastValidWord] then
                 wordToLog = lastValidWord
             end
@@ -1578,6 +1579,7 @@ task.spawn(function()
             
             lastActivePlayer = currentActivePlayer
             lastValidWord = nil -- Reset memory for the new turn
+            longestTurnText = ""
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1585,30 +1587,15 @@ task.spawn(function()
         end
         
         if currentText ~= lastSeenText then
-            local isTyping = false
-            if currentText ~= "" and lastSeenText ~= "" then
-                if #currentText < #lastSeenText and string.sub(lastSeenText, 1, #currentText) == currentText then
-                    isTyping = true
-                elseif #currentText > #lastSeenText and string.sub(currentText, 1, #lastSeenText) == lastSeenText then
-                    isTyping = true
-                end
-            elseif currentText ~= "" and lastSeenText == "" then
-                isTyping = true
-            end
-            
-            if not isTyping and lastSeenText ~= "" then
-                if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
-                    usedWords[lastSeenText] = true
-                    logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
-                    updateToggleButton() -- Instantly update the UI counter
-                end
-            end
             lastSeenText = currentText
         end
 
         -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
+        end
+        if #currentText > #longestTurnText then
+            longestTurnText = currentText
         end
         
         if isMyTurn then
