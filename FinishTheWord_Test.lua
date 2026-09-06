@@ -1744,6 +1744,7 @@ task.spawn(function()
                                         task.wait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
                                     end
                                     
+                                    task.wait(0.5) -- Wait for the game GUI to process the backspaces
                                     hasPlayedThisTurn = false
                                 end
                             else
