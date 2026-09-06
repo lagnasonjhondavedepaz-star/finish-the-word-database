@@ -81,7 +81,47 @@ local function isNodeVisible(gui)
 end
 
 local function getLivesCount()
-    -- 1. Check Attributes
+    -- 1. PRIORITY: Physical UI Check (Visuals are the most accurate)
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        local heartCount = 0
+        local foundUI = false
+        
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            if isNodeVisible(obj) then
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    -- Ignore faded or hidden background "empty" hearts
+                    if obj.ImageTransparency < 0.5 then
+                        local name = string.lower(obj.Name)
+                        local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                        
+                        if not string.find(name, "empty") and not string.find(name, "bg") then
+                            for _, word in ipairs(livesKeywords) do
+                                if string.find(name, word) or string.find(parentName, word) then
+                                    foundUI = true
+                                    heartCount = heartCount + 1
+                                    break
+                                end
+                            end
+                        end
+                    end
+                elseif obj:IsA("TextLabel") then
+                    -- Safely count literal heart emojis if they use text instead of images
+                    local _, c1 = string.gsub(obj.Text, "❤", "")
+                    local _, c2 = string.gsub(obj.Text, "♥", "")
+                    if (c1 + c2) > 0 then
+                        foundUI = true
+                        heartCount = heartCount + (c1 + c2)
+                    end
+                end
+            end
+        end
+        
+        -- If we found UI elements matching hearts, trust the visuals over hidden variables
+        if foundUI then return heartCount end
+    end
+
+    -- 2. FALLBACK: Check Attributes
     local function checkAttrs(target)
         if not target then return nil end
         for k, v in pairs(target:GetAttributes()) do
@@ -95,7 +135,7 @@ local function getLivesCount()
     local attrLives = checkAttrs(localPlayer) or checkAttrs(localPlayer.Character)
     if attrLives then return attrLives end
 
-    -- 2. Check Values
+    -- 3. FALLBACK: Check Values
     for _, obj in ipairs(localPlayer:GetDescendants()) do
         if obj:IsA("IntValue") or obj:IsA("NumberValue") then
             local lowerName = string.lower(obj.Name)
@@ -103,37 +143,6 @@ local function getLivesCount()
                 if string.find(lowerName, word) then return obj.Value end
             end
         end
-    end
-
-    -- 3. Check Physical UI
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        local heartCount = 0
-        local foundUI = false
-        
-        for _, obj in ipairs(pGui:GetDescendants()) do
-            if isNodeVisible(obj) then
-                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-                    local name = string.lower(obj.Name)
-                    local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
-                    
-                    for _, word in ipairs(livesKeywords) do
-                        if string.find(name, word) or string.find(parentName, word) then
-                            foundUI = true
-                            heartCount = heartCount + 1
-                            break
-                        end
-                    end
-                elseif obj:IsA("TextLabel") then
-                    if string.find(obj.Text, "❤") or string.find(obj.Text, "♥") or string.find(obj.Text, "❤️") then
-                        local _, count = string.gsub(obj.Text, "[❤♥]+", "")
-                        if count > 0 then return count end
-                    end
-                end
-            end
-        end
-        
-        if foundUI then return heartCount end
     end
 
     return "?"
