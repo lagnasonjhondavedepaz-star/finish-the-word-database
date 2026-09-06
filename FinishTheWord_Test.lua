@@ -41,6 +41,121 @@ topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
 
+-- LIVES / HEARTS INDICATOR
+local livesIndicator = Instance.new("TextLabel")
+livesIndicator.Size = UDim2.new(0, 80, 0, 28)
+livesIndicator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
+livesIndicator.Font = Enum.Font.GothamBold
+livesIndicator.TextSize = 11
+livesIndicator.Text = "❤️ LIVES: -"
+livesIndicator.AutomaticSize = Enum.AutomaticSize.X
+livesIndicator.LayoutOrder = 0 -- Keeps it on the far left of the container
+livesIndicator.Parent = topButtonsContainer
+
+local livesCorner = Instance.new("UICorner")
+livesCorner.CornerRadius = UDim.new(0, 6)
+livesCorner.Parent = livesIndicator
+
+local livesPadding = Instance.new("UIPadding")
+livesPadding.PaddingLeft = UDim.new(0, 10)
+livesPadding.PaddingRight = UDim.new(0, 10)
+livesPadding.Parent = livesIndicator
+
+local livesKeywords = {"life", "lives", "heart", "hearts", "health", "hp"}
+
+-- Custom visibility check to avoid conflicts with the existing isVisible function
+local function isNodeVisible(gui)
+    local current = gui
+    while current do
+        if current:IsA("GuiObject") and not current.Visible then
+            return false
+        elseif (current:IsA("ScreenGui") or current:IsA("BillboardGui") or current:IsA("SurfaceGui")) and not current.Enabled then
+            return false
+        end
+        current = current.Parent
+    end
+    return true
+end
+
+local function getLivesCount()
+    -- 1. Check Attributes
+    local function checkAttrs(target)
+        if not target then return nil end
+        for k, v in pairs(target:GetAttributes()) do
+            local lowerK = string.lower(k)
+            for _, word in ipairs(livesKeywords) do
+                if string.find(lowerK, word) and type(v) == "number" then return v end
+            end
+        end
+    end
+    
+    local attrLives = checkAttrs(localPlayer) or checkAttrs(localPlayer.Character)
+    if attrLives then return attrLives end
+
+    -- 2. Check Values
+    for _, obj in ipairs(localPlayer:GetDescendants()) do
+        if obj:IsA("IntValue") or obj:IsA("NumberValue") then
+            local lowerName = string.lower(obj.Name)
+            for _, word in ipairs(livesKeywords) do
+                if string.find(lowerName, word) then return obj.Value end
+            end
+        end
+    end
+
+    -- 3. Check Physical UI
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        local heartCount = 0
+        local foundUI = false
+        
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            if isNodeVisible(obj) then
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    local name = string.lower(obj.Name)
+                    local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                    
+                    for _, word in ipairs(livesKeywords) do
+                        if string.find(name, word) or string.find(parentName, word) then
+                            foundUI = true
+                            heartCount = heartCount + 1
+                            break
+                        end
+                    end
+                elseif obj:IsA("TextLabel") then
+                    if string.find(obj.Text, "❤") or string.find(obj.Text, "♥") or string.find(obj.Text, "❤️") then
+                        local _, count = string.gsub(obj.Text, "[❤♥]+", "")
+                        if count > 0 then return count end
+                    end
+                end
+            end
+        end
+        
+        if foundUI then return heartCount end
+    end
+
+    return "?"
+end
+
+task.spawn(function()
+    while isRunning and task.wait(0.5) do
+        local currentLives = getLivesCount()
+        livesIndicator.Text = "❤️ LIVES: " .. tostring(currentLives)
+        
+        if type(currentLives) == "number" then
+            if currentLives > 2 then
+                livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
+            elseif currentLives == 2 then
+                livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
+            else
+                livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
+            end
+        else
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end
+end)
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
