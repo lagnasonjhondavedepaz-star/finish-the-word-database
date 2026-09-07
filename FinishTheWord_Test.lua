@@ -16,10 +16,10 @@ screenGui.Parent = coreGui
 local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
-local typeRemainingLetters -- Add this forward declaration
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
-screenGui.AncestryChanged:Connect(function(_, parent)    if not parent then
+screenGui.AncestryChanged:Connect(function(_, parent)
+    if not parent then
         isRunning = false
     end
 end)
@@ -41,21 +41,16 @@ topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
 
--- ⚡ GLOBAL SKILL TRACKERS
-local manualLives = 2
-local longWordCount = 0
-local lastGameLives = nil
-
 -- LIVES / HEARTS INDICATOR
 local livesIndicator = Instance.new("TextLabel")
-livesIndicator.Size = UDim2.new(0, 110, 0, 28) -- Slightly wider to fit the (0/5) charge text
+livesIndicator.Size = UDim2.new(0, 80, 0, 28)
 livesIndicator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
 livesIndicator.Font = Enum.Font.GothamBold
 livesIndicator.TextSize = 11
 livesIndicator.Text = "❤️ LIVES: -"
 livesIndicator.AutomaticSize = Enum.AutomaticSize.X
-livesIndicator.LayoutOrder = 0 
+livesIndicator.LayoutOrder = 0 -- Keeps it on the far left of the container
 livesIndicator.Parent = topButtonsContainer
 
 local livesCorner = Instance.new("UICorner")
@@ -69,6 +64,7 @@ livesPadding.Parent = livesIndicator
 
 local livesKeywords = {"life", "lives", "heart", "hearts", "health", "hp"}
 
+-- Custom visibility check to avoid conflicts with the existing isVisible function
 local function isNodeVisible(gui)
     local current = gui
     while current do
@@ -83,39 +79,7 @@ local function isNodeVisible(gui)
 end
 
 local function getLivesCount()
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        local heartCount = 0
-        local foundUI = false
-        for _, obj in ipairs(pGui:GetDescendants()) do
-            if isNodeVisible(obj) then
-                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-                    if obj.ImageTransparency < 0.5 then
-                        local name = string.lower(obj.Name)
-                        local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
-                        if not string.find(name, "empty") and not string.find(name, "bg") then
-                            for _, word in ipairs(livesKeywords) do
-                                if string.find(name, word) or string.find(parentName, word) then
-                                    foundUI = true
-                                    heartCount = heartCount + 1
-                                    break
-                                end
-                            end
-                        end
-                    end
-                elseif obj:IsA("TextLabel") then
-                    local _, c1 = string.gsub(obj.Text, "❤", "")
-                    local _, c2 = string.gsub(obj.Text, "♥", "")
-                    if (c1 + c2) > 0 then
-                        foundUI = true
-                        heartCount = heartCount + (c1 + c2)
-                    end
-                end
-            end
-        end
-        if foundUI then return heartCount end
-    end
-
+    -- 1. Check Attributes
     local function checkAttrs(target)
         if not target then return nil end
         for k, v in pairs(target:GetAttributes()) do
@@ -125,9 +89,11 @@ local function getLivesCount()
             end
         end
     end
+    
     local attrLives = checkAttrs(localPlayer) or checkAttrs(localPlayer.Character)
     if attrLives then return attrLives end
 
+    -- 2. Check Values
     for _, obj in ipairs(localPlayer:GetDescendants()) do
         if obj:IsA("IntValue") or obj:IsA("NumberValue") then
             local lowerName = string.lower(obj.Name)
@@ -136,47 +102,56 @@ local function getLivesCount()
             end
         end
     end
+
+    -- 3. Check Physical UI
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        local heartCount = 0
+        local foundUI = false
+        
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            if isNodeVisible(obj) then
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    local name = string.lower(obj.Name)
+                    local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                    
+                    for _, word in ipairs(livesKeywords) do
+                        if string.find(name, word) or string.find(parentName, word) then
+                            foundUI = true
+                            heartCount = heartCount + 1
+                            break
+                        end
+                    end
+                elseif obj:IsA("TextLabel") then
+                    if string.find(obj.Text, "❤") or string.find(obj.Text, "♥") or string.find(obj.Text, "❤️") then
+                        local _, count = string.gsub(obj.Text, "[❤♥]+", "")
+                        if count > 0 then return count end
+                    end
+                end
+            end
+        end
+        
+        if foundUI then return heartCount end
+    end
+
     return "?"
 end
 
 task.spawn(function()
     while isRunning and task.wait(0.5) do
-        local gameLives = getLivesCount()
+        local currentLives = getLivesCount()
+        livesIndicator.Text = "❤️ LIVES: " .. tostring(currentLives)
         
-        if type(gameLives) == "number" then
-            if lastGameLives == nil then
-                lastGameLives = gameLives
-                manualLives = gameLives
+        if type(currentLives) == "number" then
+            if currentLives > 2 then
+                livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
+            elseif currentLives == 2 then
+                livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
+            else
+                livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
             end
-            
-            -- State Tracker: Calculates when the game physically removes a life
-            local delta = gameLives - lastGameLives
-            if delta ~= 0 then
-                manualLives = manualLives + delta
-                lastGameLives = gameLives
-            end
-        end
-        
-        -- Cap max lives at 2
-        if manualLives > 2 then 
-            manualLives = 2 
-        end
-        
-        -- Conditionally hide the (0/10) tracker if lives are full
-        if manualLives >= 2 then
-            livesIndicator.Text = "❤️ LIVES: " .. manualLives
-            longWordCount = 0 -- Reset charge if we are at max lives
         else
-            livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/10)"
-        end
-        
-        -- Color updates
-        if manualLives >= 2 then
-            livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
-        elseif manualLives == 1 then
-            livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
-        else
-            livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
         end
     end
 end)
@@ -364,7 +339,7 @@ navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
 local function createNavTab(text)
     local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(0, 100, 0, 28) -- Scaled down slightly to fit 3 tabs perfectly
+    tab.Size = UDim2.new(0, 110, 0, 28)
     tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tab.TextColor3 = Color3.fromRGB(150, 150, 150)
     tab.Font = Enum.Font.GothamBold
@@ -381,7 +356,6 @@ end
 
 local settingsTab = createNavTab("⚙ SETTINGS")
 local consoleTab = createNavTab("📋 CONSOLE")
-local manualTab = createNavTab("⌨ MANUAL")
 
 -- CONTENT PANELS
 local settingsPanel = Instance.new("Frame")
@@ -402,16 +376,6 @@ consolePanel.ClipsDescendants = true
 consolePanel.Visible = true
 consolePanel.Parent = mainFrame
 
--- NEW MANUAL PANEL
-local manualPanel = Instance.new("Frame")
-manualPanel.Size = UDim2.new(1, 0, 1, -82)
-manualPanel.Position = UDim2.new(0, 0, 0, 67)
-manualPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-manualPanel.BorderSizePixel = 0
-manualPanel.ClipsDescendants = true
-manualPanel.Visible = false
-manualPanel.Parent = mainFrame
-
 -- TAB SWITCHING
 local currentTab = "console"
 
@@ -419,104 +383,27 @@ local function switchTab(tabName)
     currentTab = tabName
     settingsPanel.Visible = (tabName == "settings")
     consolePanel.Visible = (tabName == "console")
-    manualPanel.Visible = (tabName == "manual")
     
-    local inactiveBg = Color3.fromRGB(50, 50, 50)
-    local inactiveText = Color3.fromRGB(150, 150, 150)
-    
-    settingsTab.BackgroundColor3 = (tabName == "settings") and Color3.fromRGB(0, 180, 100) or inactiveBg
-    settingsTab.TextColor3 = (tabName == "settings") and Color3.fromRGB(255, 255, 255) or inactiveText
-    
-    consoleTab.BackgroundColor3 = (tabName == "console") and Color3.fromRGB(0, 150, 200) or inactiveBg
-    consoleTab.TextColor3 = (tabName == "console") and Color3.fromRGB(255, 255, 255) or inactiveText
-    
-    manualTab.BackgroundColor3 = (tabName == "manual") and Color3.fromRGB(200, 100, 0) or inactiveBg
-    manualTab.TextColor3 = (tabName == "manual") and Color3.fromRGB(255, 255, 255) or inactiveText
-end
-
-settingsTab.MouseButton1Click:Connect(function() switchTab("settings") end)
-consoleTab.MouseButton1Click:Connect(function() switchTab("console") end)
-manualTab.MouseButton1Click:Connect(function() switchTab("manual") end)
-
--- MANUAL PANEL CONTENT & TYPING LOGIC
-local manualLayout = Instance.new("UIListLayout")
-manualLayout.Parent = manualPanel
-manualLayout.SortOrder = Enum.SortOrder.LayoutOrder
-manualLayout.Padding = UDim.new(0, 15)
-manualLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local manualPadding = Instance.new("UIPadding")
-manualPadding.PaddingTop = UDim.new(0, 25)
-manualPadding.Parent = manualPanel
-
-local manualLabel = Instance.new("TextLabel")
-manualLabel.Size = UDim2.new(0.9, 0, 0, 20)
-manualLabel.BackgroundTransparency = 1
-manualLabel.Text = "✍️ ENTER REMAINING LETTERS:"
-manualLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-manualLabel.Font = Enum.Font.GothamBold
-manualLabel.TextSize = 12
-manualLabel.Parent = manualPanel
-
-local manualInput = Instance.new("TextBox")
-manualInput.Size = UDim2.new(0.8, 0, 0, 36)
-manualInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-manualInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-manualInput.Font = Enum.Font.GothamBold
-manualInput.TextSize = 14
-manualInput.PlaceholderText = "e.g., IXER"
-manualInput.ClearTextOnFocus = false
-manualInput.Text = ""
-manualInput.Parent = manualPanel
-
-local manualInputCorner = Instance.new("UICorner")
-manualInputCorner.CornerRadius = UDim.new(0, 6)
-manualInputCorner.Parent = manualInput
-
-local manualTypeBtn = Instance.new("TextButton")
-manualTypeBtn.Size = UDim2.new(0.8, 0, 0, 36)
-manualTypeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-manualTypeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-manualTypeBtn.Font = Enum.Font.GothamBold
-manualTypeBtn.TextSize = 12
-manualTypeBtn.Text = "⌨ TYPE & ENTER"
-manualTypeBtn.Parent = manualPanel
-
-local manualTypeCorner = Instance.new("UICorner")
-manualTypeCorner.CornerRadius = UDim.new(0, 6)
-manualTypeCorner.Parent = manualTypeBtn
-
-local isManualTyping = false
-
-local function triggerManualType()
-    if isManualTyping then return end
-    local textToType = manualInput.Text:upper():match("^[%a]*") or ""
-    if textToType == "" then return end
-    
-    isManualTyping = true
-    manualTypeBtn.Text = "⏳ TYPING..."
-    manualTypeBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-    
-    task.spawn(function()
-        task.defer(function()
-            if logMessage then logMessage(">> MANUAL OVERRIDE: " .. textToType, Color3.fromRGB(255, 200, 0)) end
-        end)
-        
-        -- Reuse the automation's exact typing function and speed logic
-        typeRemainingLetters(textToType, 0, true)
-        
-        manualInput.Text = ""
-        isManualTyping = false
-        manualTypeBtn.Text = "⌨ TYPE & ENTER"
-        manualTypeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-    end)
-end
-
-manualTypeBtn.MouseButton1Click:Connect(triggerManualType)
-manualInput.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        triggerManualType()
+    -- Update tab colors
+    if tabName == "settings" then
+        settingsTab.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+        settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+    else
+        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
+        consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
+end
+
+settingsTab.MouseButton1Click:Connect(function()
+    switchTab("settings")
+end)
+
+consoleTab.MouseButton1Click:Connect(function()
+    switchTab("console")
 end)
 
 -- SETTINGS PANEL CONTENT
@@ -1243,7 +1130,7 @@ local function getTimestamp()
     return string.format("[%02d:%02d:%02d]", now.hour, now.min, now.sec)
 end
 
-function logMessage(text, color)
+local function logMessage(text, color)
     if not isRunning then return end
     
     local msgContainer = Instance.new("Frame")
@@ -1569,7 +1456,7 @@ local function pressKey(charStr, keycode, holdTime)
 end
 
 -- Added a 3rd parameter: isPlayingUsedWord
-typeRemainingLetters = function(fullWord, prefixLength, isPlayingUsedWord)
+local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
     local willStartDelay = false
@@ -1733,23 +1620,7 @@ task.spawn(function()
     
     local cachedKeyboard = nil -- Caches the keyboard to force visibility
     
-    local lastAutoSetLives = manualLives -- Tracks life changes for auto-settings
-    
     while isRunning and task.wait(0.1) do
-        -- ⚡ AUTO-ADJUST LENGTH BASED ON LIVES
-        if manualLives ~= lastAutoSetLives then
-            lastAutoSetLives = manualLives
-            if manualLives <= 1 and lengthMode ~= 2 then
-                lengthMode = 2
-                refreshTargetLengthButtons()
-                logMessage("⚠️ Lives critical! Auto-switched TARGET LENGTH to 10-19", Color3.fromRGB(255, 150, 0))
-            elseif manualLives >= 2 and lengthMode ~= 1 then
-                lengthMode = 1
-                refreshTargetLengthButtons()
-                logMessage("💚 Lives secure! Auto-switched TARGET LENGTH to 1-9", Color3.fromRGB(0, 255, 100))
-            end
-        end
-
         -- Reset the turn state if the user just enabled auto-type
         if forceReplayThisTurn then
             hasPlayedThisTurn = false
@@ -1809,41 +1680,21 @@ task.spawn(function()
 
         if currentActivePlayer ~= lastActivePlayer then
             local wordToLog = nil
-            
-            -- PRIORITY 1: The exact text on screen right before the turn ended (if valid)
-            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
-                wordToLog = lastSeenText
-            -- PRIORITY 2: The last definitively valid word we saw during the turn
+            if longestTurnText ~= "" then
+                wordToLog = longestTurnText
             elseif lastValidWord and validWordsDict[lastValidWord] then
                 wordToLog = lastValidWord
             end
 
-            if wordToLog then
-                if not usedWords[wordToLog] then
-                    usedWords[wordToLog] = true
-                    logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
-                    updateToggleButton() 
-                end
-
-                -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
-                if lastActivePlayer == localPlayer then
-                    if #wordToLog >= 10 then
-                        if manualLives < 2 then 
-                            longWordCount = longWordCount + 1
-                            if longWordCount >= 10 then
-                                manualLives = 2 
-                                longWordCount = 0
-                                logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
-                            else
-                                logMessage("⚡ Skill Charge: " .. longWordCount .. "/10", Color3.fromRGB(0, 200, 255))
-                            end
-                        end
-                    end
-                end
+            if wordToLog and not usedWords[wordToLog] then
+                usedWords[wordToLog] = true
+                logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
+                updateToggleButton() -- Instantly update the UI counter
             end
             
             lastActivePlayer = currentActivePlayer
-            lastValidWord = nil 
+            lastValidWord = nil -- Reset memory for the new turn
+            longestTurnText = ""
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1854,9 +1705,12 @@ task.spawn(function()
             lastSeenText = currentText
         end
 
-        -- Strictly track the most recent valid word
+        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
+        end
+        if #currentText > #longestTurnText then
+            longestTurnText = currentText
         end
         
         if isMyTurn then
@@ -2005,7 +1859,7 @@ task.spawn(function()
                             pendingManualWord = nil -- Clear it if no words are found
                             currentAction = "Missing Prefix: " .. settledPrefix
                             updateToggleButton()
-                            
+                            logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
                             if not missingPrefixes[settledPrefix] then
                                 missingPrefixes[settledPrefix] = true
                                 logMessage(" NOTED MISSING PREFIX: [" .. settledPrefix .. "]", Color3.fromRGB(255, 100, 100))
