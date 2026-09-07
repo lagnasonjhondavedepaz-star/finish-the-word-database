@@ -1829,13 +1829,16 @@ task.spawn(function()
 
         if currentActivePlayer ~= lastActivePlayer then
             local wordToLog = nil
-            if longestTurnText ~= "" then
-                wordToLog = longestTurnText
+            
+            -- PRIORITY 1: The exact text on screen right before the turn ended (if valid)
+            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
+                wordToLog = lastSeenText
+            -- PRIORITY 2: The last definitively valid word we saw during the turn
             elseif lastValidWord and validWordsDict[lastValidWord] then
                 wordToLog = lastValidWord
             end
 
-if wordToLog then
+            if wordToLog then
                 if not usedWords[wordToLog] then
                     usedWords[wordToLog] = true
                     logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
@@ -1845,10 +1848,10 @@ if wordToLog then
                 -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
                 if lastActivePlayer == localPlayer then
                     if #wordToLog >= 10 then
-                        if manualLives < 2 then -- Only charge the skill if we actually need a life
+                        if manualLives < 2 then 
                             longWordCount = longWordCount + 1
                             if longWordCount >= 10 then
-                                manualLives = 2 -- Max out the lives
+                                manualLives = 2 
                                 longWordCount = 0
                                 logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
                             else
@@ -1860,8 +1863,7 @@ if wordToLog then
             end
             
             lastActivePlayer = currentActivePlayer
-            lastValidWord = nil -- Reset memory for the new turn
-            longestTurnText = ""
+            lastValidWord = nil 
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1872,12 +1874,9 @@ if wordToLog then
             lastSeenText = currentText
         end
 
-        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
+        -- Strictly track the most recent valid word
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
-        end
-        if #currentText > #longestTurnText then
-            longestTurnText = currentText
         end
         
         if isMyTurn then
