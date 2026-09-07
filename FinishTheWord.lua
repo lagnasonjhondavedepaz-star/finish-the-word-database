@@ -41,6 +41,146 @@ topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
 
+-- ⚡ GLOBAL SKILL TRACKERS
+local manualLives = 2
+local longWordCount = 0
+local lastGameLives = nil
+
+-- LIVES / HEARTS INDICATOR
+local livesIndicator = Instance.new("TextLabel")
+livesIndicator.Size = UDim2.new(0, 110, 0, 28) -- Slightly wider to fit the (0/5) charge text
+livesIndicator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
+livesIndicator.Font = Enum.Font.GothamBold
+livesIndicator.TextSize = 11
+livesIndicator.Text = "❤️ LIVES: -"
+livesIndicator.AutomaticSize = Enum.AutomaticSize.X
+livesIndicator.LayoutOrder = 0 
+livesIndicator.Parent = topButtonsContainer
+
+local livesCorner = Instance.new("UICorner")
+livesCorner.CornerRadius = UDim.new(0, 6)
+livesCorner.Parent = livesIndicator
+
+local livesPadding = Instance.new("UIPadding")
+livesPadding.PaddingLeft = UDim.new(0, 10)
+livesPadding.PaddingRight = UDim.new(0, 10)
+livesPadding.Parent = livesIndicator
+
+local livesKeywords = {"life", "lives", "heart", "hearts", "health", "hp"}
+
+local function isNodeVisible(gui)
+    local current = gui
+    while current do
+        if current:IsA("GuiObject") and not current.Visible then
+            return false
+        elseif (current:IsA("ScreenGui") or current:IsA("BillboardGui") or current:IsA("SurfaceGui")) and not current.Enabled then
+            return false
+        end
+        current = current.Parent
+    end
+    return true
+end
+
+local function getLivesCount()
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        local heartCount = 0
+        local foundUI = false
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            if isNodeVisible(obj) then
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    if obj.ImageTransparency < 0.5 then
+                        local name = string.lower(obj.Name)
+                        local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                        if not string.find(name, "empty") and not string.find(name, "bg") then
+                            for _, word in ipairs(livesKeywords) do
+                                if string.find(name, word) or string.find(parentName, word) then
+                                    foundUI = true
+                                    heartCount = heartCount + 1
+                                    break
+                                end
+                            end
+                        end
+                    end
+                elseif obj:IsA("TextLabel") then
+                    local _, c1 = string.gsub(obj.Text, "❤", "")
+                    local _, c2 = string.gsub(obj.Text, "♥", "")
+                    if (c1 + c2) > 0 then
+                        foundUI = true
+                        heartCount = heartCount + (c1 + c2)
+                    end
+                end
+            end
+        end
+        if foundUI then return heartCount end
+    end
+
+    local function checkAttrs(target)
+        if not target then return nil end
+        for k, v in pairs(target:GetAttributes()) do
+            local lowerK = string.lower(k)
+            for _, word in ipairs(livesKeywords) do
+                if string.find(lowerK, word) and type(v) == "number" then return v end
+            end
+        end
+    end
+    local attrLives = checkAttrs(localPlayer) or checkAttrs(localPlayer.Character)
+    if attrLives then return attrLives end
+
+    for _, obj in ipairs(localPlayer:GetDescendants()) do
+        if obj:IsA("IntValue") or obj:IsA("NumberValue") then
+            local lowerName = string.lower(obj.Name)
+            for _, word in ipairs(livesKeywords) do
+                if string.find(lowerName, word) then return obj.Value end
+            end
+        end
+    end
+    return "?"
+end
+
+task.spawn(function()
+    while isRunning and task.wait(0.5) do
+        local gameLives = getLivesCount()
+        
+        if type(gameLives) == "number" then
+            if lastGameLives == nil then
+                lastGameLives = gameLives
+                manualLives = gameLives
+            end
+            
+            -- State Tracker: Calculates when the game physically removes a life
+            local delta = gameLives - lastGameLives
+            if delta ~= 0 then
+                manualLives = manualLives + delta
+                lastGameLives = gameLives
+            end
+        end
+        
+        -- Cap max lives at 2
+        if manualLives > 2 then 
+            manualLives = 2 
+        end
+        
+        -- Conditionally hide the (0/10) tracker if lives are full
+        if manualLives >= 2 then
+            livesIndicator.Text = "❤️ LIVES: " .. manualLives
+            longWordCount = 0 -- Reset charge if we are at max lives
+        else
+            livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/10)"
+        end
+        
+        -- Color updates
+        if manualLives >= 2 then
+            livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
+        elseif manualLives == 1 then
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
+        else
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
+        end
+    end
+end)
+
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 100, 0, 28)
@@ -701,7 +841,7 @@ refreshSuffixOrderList = function()
     end
 end
 
-local lengthMode = 1 -- 1 = short, 2 = long
+local lengthMode = 1 -- 1: 1-9, 2: 10-19, 3: 20+
 local lengthOrderMode = 3 -- 1 = Shortest, 2 = Longest, 3 = Random
 
 -- HORIZONTAL CONTAINER: Priority
@@ -813,7 +953,8 @@ targetLengthLabel.Parent = targetLengthContainer
 
 local function createTargetLengthButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.5, -42, 1, 0)
+    -- Adjust width so 3 buttons fit neatly alongside the label
+    btn.Size = UDim2.new(0.33, -27, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
@@ -828,8 +969,9 @@ local function createTargetLengthButton(text)
     return btn
 end
 
-local targetShortBtn = createTargetLengthButton("SHORT (1-9)")
-local targetLongBtn = createTargetLengthButton("LONG (10+)")
+local targetLen1Btn = createTargetLengthButton("1-9")
+local targetLen2Btn = createTargetLengthButton("10-19")
+local targetLen3Btn = createTargetLengthButton("20+")
 
 -- REFRESH LOGIC FOR ALL HORIZONTAL BUTTONS
 local function refreshPriorityButtons()
@@ -844,8 +986,9 @@ local function refreshSortButtons()
 end
 
 local function refreshTargetLengthButtons()
-    targetShortBtn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
-    targetLongBtn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLen1Btn.BackgroundColor3 = (lengthMode == 1) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLen2Btn.BackgroundColor3 = (lengthMode == 2) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
+    targetLen3Btn.BackgroundColor3 = (lengthMode == 3) and Color3.fromRGB(40, 100, 200) or Color3.fromRGB(60, 60, 60)
 end
 
 -- CLICK CONNECTIONS
@@ -854,8 +997,9 @@ priorityEndingBtn.MouseButton1Click:Connect(function() suffixLengthStrict = fals
 sortShortestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 1; refreshSortButtons() end)
 sortLongestBtn.MouseButton1Click:Connect(function() lengthOrderMode = 2; refreshSortButtons() end)
 sortRandomBtn.MouseButton1Click:Connect(function() lengthOrderMode = 3; refreshSortButtons() end)
-targetShortBtn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: SHORT", Color3.fromRGB(255, 255, 0)) end)
-targetLongBtn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: LONG", Color3.fromRGB(255, 255, 0)) end)
+targetLen1Btn.MouseButton1Click:Connect(function() lengthMode = 1; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: 1-9", Color3.fromRGB(255, 255, 0)) end)
+targetLen2Btn.MouseButton1Click:Connect(function() lengthMode = 2; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: 10-19", Color3.fromRGB(255, 255, 0)) end)
+targetLen3Btn.MouseButton1Click:Connect(function() lengthMode = 3; refreshTargetLengthButtons(); logMessage("Switched to TARGET LENGTH: 20+", Color3.fromRGB(255, 255, 0)) end)
 
 -- INITIALIZE UI
 refreshSuffixButtons()
@@ -1122,11 +1266,52 @@ end
 
 local function matchesLengthMode(word)
     if lengthMode == 1 then
-        return #word <= 9
+        return #word >= 1 and #word <= 9
     elseif lengthMode == 2 then
-        return #word >= 10
+        return #word >= 10 and #word <= 19
+    elseif lengthMode == 3 then
+        return #word >= 20
     end
     return true
+end
+
+local function matchesLengthBucket(word, bucket)
+    if bucket == 1 then
+        return #word >= 1 and #word <= 9
+    elseif bucket == 2 then
+        return #word >= 10 and #word <= 19
+    elseif bucket == 3 then
+        return #word >= 20
+    end
+    return false
+end
+
+local function getLengthFallbackOrder()
+    if lengthMode == 1 then
+        return {1, 2, 3}
+    elseif lengthMode == 2 then
+        return {2, 3, 1}
+    elseif lengthMode == 3 then
+        return {3, 2, 1}
+    end
+    return {1, 2, 3}
+end
+
+local function getBestLengthPool(pool)
+    for _, bucket in ipairs(getLengthFallbackOrder()) do
+        local matches = {}
+        for _, word in ipairs(pool) do
+            if matchesLengthBucket(word, bucket) then
+                table.insert(matches, word)
+            end
+        end
+
+        if #matches > 0 then
+            return matches, bucket
+        end
+    end
+
+    return {}, nil
 end
 
 local function pickByLengthOrder(pool)
@@ -1452,12 +1637,31 @@ end
 task.spawn(function()
     local lastSeenText = ""
     local lastValidWord = nil
+    local longestTurnText = ""
     local hasPlayedThisTurn = false
     local lastActivePlayer = nil
     local pendingManualWord = nil -- Memory for the manual word
     local hasTriedUsedWordThisTurn = false -- Prevents multiple used word attempts per turn
     
+    local cachedKeyboard = nil -- Caches the keyboard to force visibility
+    
+    local lastAutoSetLives = manualLives -- Tracks life changes for auto-settings
+    
     while isRunning and task.wait(0.1) do
+        -- ⚡ AUTO-ADJUST LENGTH BASED ON LIVES
+        if manualLives ~= lastAutoSetLives then
+            lastAutoSetLives = manualLives
+            if manualLives <= 1 and lengthMode ~= 2 then
+                lengthMode = 2
+                refreshTargetLengthButtons()
+                logMessage("⚠️ Lives critical! Auto-switched TARGET LENGTH to 10-19", Color3.fromRGB(255, 150, 0))
+            elseif manualLives >= 2 and lengthMode ~= 1 then
+                lengthMode = 1
+                refreshTargetLengthButtons()
+                logMessage("💚 Lives secure! Auto-switched TARGET LENGTH to 1-9", Color3.fromRGB(0, 255, 100))
+            end
+        end
+
         -- Reset the turn state if the user just enabled auto-type
         if forceReplayThisTurn then
             hasPlayedThisTurn = false
@@ -1466,6 +1670,45 @@ task.spawn(function()
         
         local currentText = readInputBox()
         local isMyTurn = localPlayer:GetAttribute("IsTurn") == true
+        
+        -- FORCE KEYBOARD VISIBILITY DURING YOUR TURN
+        if isMyTurn then
+            local pGui = localPlayer:FindFirstChild("PlayerGui")
+            local sg = pGui and pGui:FindFirstChild("ScreenGui")
+            
+            if sg then
+                -- Helper function to force all parent containers to be visible
+                local function forceVisible(guiObj)
+                    local curr = guiObj
+                    while curr and curr ~= sg do
+                        if curr:IsA("GuiObject") and not curr.Visible then
+                            curr.Visible = true
+                        end
+                        curr = curr.Parent
+                    end
+                end
+
+                if cachedKeyboard and cachedKeyboard:IsDescendantOf(sg) then
+                    forceVisible(cachedKeyboard)
+                else
+                    local foundEnter, foundBack
+                    -- Deep search for the custom GUI keyboard buttons
+                    for _, obj in ipairs(sg:GetDescendants()) do
+                        if obj:IsA("TextButton") then
+                            local txt = string.lower(obj.Text or "")
+                            local name = string.lower(obj.Name or "")
+                            if txt == "enter" or name == "enter" then foundEnter = obj end
+                            if txt == "back" or name == "back" then foundBack = obj end
+                        end
+                    end
+                    
+                    if foundEnter and foundBack then
+                        cachedKeyboard = foundEnter
+                        forceVisible(cachedKeyboard)
+                    end
+                end
+            end
+        end
         
         -- GLOBAL TURN TRACKER: Detects when ANY player's turn ends to reliably catch their words
         local currentActivePlayer = nil
@@ -1478,20 +1721,39 @@ task.spawn(function()
 
         if currentActivePlayer ~= lastActivePlayer then
             local wordToLog = nil
-            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
-                wordToLog = lastSeenText
+            if longestTurnText ~= "" then
+                wordToLog = longestTurnText
             elseif lastValidWord and validWordsDict[lastValidWord] then
                 wordToLog = lastValidWord
             end
 
-            if wordToLog and not usedWords[wordToLog] then
-                usedWords[wordToLog] = true
-                logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
-                updateToggleButton() -- Instantly update the UI counter
+if wordToLog then
+                if not usedWords[wordToLog] then
+                    usedWords[wordToLog] = true
+                    logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
+                    updateToggleButton() 
+                end
+
+                -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
+                if lastActivePlayer == localPlayer then
+                    if #wordToLog >= 10 then
+                        if manualLives < 2 then -- Only charge the skill if we actually need a life
+                            longWordCount = longWordCount + 1
+                            if longWordCount >= 10 then
+                                manualLives = 2 -- Max out the lives
+                                longWordCount = 0
+                                logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
+                            else
+                                logMessage("⚡ Skill Charge: " .. longWordCount .. "/10", Color3.fromRGB(0, 200, 255))
+                            end
+                        end
+                    end
+                end
             end
             
             lastActivePlayer = currentActivePlayer
             lastValidWord = nil -- Reset memory for the new turn
+            longestTurnText = ""
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1499,30 +1761,15 @@ task.spawn(function()
         end
         
         if currentText ~= lastSeenText then
-            local isTyping = false
-            if currentText ~= "" and lastSeenText ~= "" then
-                if #currentText < #lastSeenText and string.sub(lastSeenText, 1, #currentText) == currentText then
-                    isTyping = true
-                elseif #currentText > #lastSeenText and string.sub(currentText, 1, #lastSeenText) == lastSeenText then
-                    isTyping = true
-                end
-            elseif currentText ~= "" and lastSeenText == "" then
-                isTyping = true
-            end
-            
-            if not isTyping and lastSeenText ~= "" then
-                if validWordsDict[lastSeenText] and not usedWords[lastSeenText] then
-                    usedWords[lastSeenText] = true
-                    logMessage("[BLACKLIST] " .. lastSeenText, Color3.fromRGB(255, 150, 0))
-                    updateToggleButton() -- Instantly update the UI counter
-                end
-            end
             lastSeenText = currentText
         end
 
         -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
+        end
+        if #currentText > #longestTurnText then
+            longestTurnText = currentText
         end
         
         if isMyTurn then
@@ -1538,7 +1785,6 @@ task.spawn(function()
                     if settledPrefix ~= "" then
                         logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
                         
-                        local exactLengthMatches = {}
                         local fallbackMatches = {}
                         
                         local usedCount = 0
@@ -1555,27 +1801,16 @@ task.spawn(function()
                             usedChance = 5
                         end
                         
-                        -- Only attempt a used word if ENABLED, it's short, and we haven't already tried one this turn
-                        local tryUsedWord = tryUsedWordsEnabled and (lengthMode == 1) and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
+                        -- Only attempt a used word if ENABLED, it's short (1-9 letters total), and we haven't already tried one this turn
+                        local tryUsedWord = tryUsedWordsEnabled and lengthMode == 1 and (not hasTriedUsedWordThisTurn) and (usedChance > 0) and (math.random(1, 100) <= usedChance)
                         local usedFallback = {}
-                        local usedExact = {}
                         
                         for _, word in ipairs(wordsTable) do
                             if string.sub(word, 1, #settledPrefix) == settledPrefix then
-                                local matchesLength = false
-                                if lengthMode == 1 and #word <= 9 then matchesLength = true end
-                                if lengthMode == 2 and #word >= 10 then matchesLength = true end
-                                
                                 if usedWords[word] then
                                     table.insert(usedFallback, word)
-                                    if matchesLength then
-                                        table.insert(usedExact, word)
-                                    end
                                 else
                                     table.insert(fallbackMatches, word)
-                                    if matchesLength then
-                                        table.insert(exactLengthMatches, word)
-                                    end
                                 end
                             end
                         end
@@ -1584,7 +1819,6 @@ task.spawn(function()
                         if tryUsedWord and #usedFallback > 0 then
                             logMessage("Intentionally trying a used word to seem human...", Color3.fromRGB(255, 100, 255))
                             fallbackMatches = usedFallback
-                            exactLengthMatches = usedExact
                             isPlayingUsedWord = true
                             hasTriedUsedWordThisTurn = true -- Mark that we tried a used word this turn
                         end
@@ -1597,30 +1831,32 @@ task.spawn(function()
                         
                         if suffixModeEnabled then
                             for _, targetSuffix in ipairs(activeSuffixes) do
-                                local exactSuffixMatches = {}
                                 local fallbackSuffixMatches = {}
                                 
                                 for _, word in ipairs(fallbackMatches) do
                                     if string.sub(word, -#targetSuffix) == targetSuffix then
                                         table.insert(fallbackSuffixMatches, word)
-                                        if matchesLengthMode(word) then
-                                            table.insert(exactSuffixMatches, word)
-                                        end
                                     end
                                 end
                                 
-                                if suffixLengthStrict then
-                                    if #exactSuffixMatches > 0 then
-                                        finalPool = exactSuffixMatches
-                                        foundSuffix = true
-                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
-                                        break
+                                if #fallbackSuffixMatches > 0 then
+                                    local selectedPool, selectedBucket
+                                    if suffixLengthStrict then
+                                        selectedPool, selectedBucket = getBestLengthPool(fallbackSuffixMatches)
+                                    else
+                                        selectedPool = fallbackSuffixMatches
                                     end
-                                else
-                                    if #fallbackSuffixMatches > 0 then
-                                        finalPool = fallbackSuffixMatches
+
+                                    if #selectedPool > 0 then
+                                        finalPool = selectedPool
                                         foundSuffix = true
-                                        logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
+                                        if not suffixLengthStrict then
+                                            logMessage("Matched suffix ["..targetSuffix.."] (Length Ignored)", Color3.fromRGB(200, 200, 0))
+                                        elseif selectedBucket == lengthMode then
+                                            logMessage("Matched suffix ["..targetSuffix.."] (Length Matched)", Color3.fromRGB(0, 255, 0))
+                                        else
+                                            logMessage("Matched suffix ["..targetSuffix.."] (Length Fallback)", Color3.fromRGB(200, 200, 0))
+                                        end
                                         break
                                     end
                                 end
@@ -1631,10 +1867,10 @@ task.spawn(function()
                             if suffixModeEnabled then
                                 logMessage("No suffix match. Back to normal.", Color3.fromRGB(255, 150, 0))
                             end
-                            finalPool = #exactLengthMatches > 0 and exactLengthMatches or fallbackMatches
+                            finalPool = getBestLengthPool(fallbackMatches)
                         end
                         
-if #finalPool > 0 then
+                        if #finalPool > 0 then
                             local chosenWord = pickByLengthOrder(finalPool)
                             
                             -- Prevent the word from changing if we already found one in manual mode
