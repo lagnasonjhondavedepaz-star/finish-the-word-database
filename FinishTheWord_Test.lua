@@ -458,6 +458,17 @@ manualLabel.Font = Enum.Font.GothamBold
 manualLabel.TextSize = 12
 manualLabel.Parent = manualPanel
 
+-- 🔍 DYNAMIC PREFIX DISPLAY LABEL
+local prefixDisplayLabel = Instance.new("TextLabel")
+prefixDisplayLabel.Size = UDim2.new(0.8, 0, 0, 20)
+prefixDisplayLabel.BackgroundTransparency = 1
+prefixDisplayLabel.Text = "Current Prefix: -"
+prefixDisplayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+prefixDisplayLabel.Font = Enum.Font.GothamBold
+prefixDisplayLabel.TextSize = 11
+prefixDisplayLabel.TextXAlignment = Enum.TextXAlignment.Left
+prefixDisplayLabel.Parent = manualPanel
+
 local manualInput = Instance.new("TextBox")
 manualInput.Size = UDim2.new(0.8, 0, 0, 36)
 manualInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -1736,17 +1747,16 @@ task.spawn(function()
     local lastAutoSetLives = manualLives -- Tracks life changes for auto-settings
     
     while isRunning and task.wait(0.1) do
-        -- ⚡ AUTO-ADJUST LENGTH BASED ON LIVES
-        if manualLives ~= lastAutoSetLives then
-            lastAutoSetLives = manualLives
-            if manualLives <= 1 and lengthMode ~= 2 then
-                lengthMode = 2
-                refreshTargetLengthButtons()
-                logMessage("⚠️ Lives critical! Auto-switched TARGET LENGTH to 10-19", Color3.fromRGB(255, 150, 0))
-            elseif manualLives >= 2 and lengthMode ~= 1 then
-                lengthMode = 1
-                refreshTargetLengthButtons()
-                logMessage("💚 Lives secure! Auto-switched TARGET LENGTH to 1-9", Color3.fromRGB(0, 255, 100))
+        local currentText = readInputBox()
+        
+        -- Update the Manual tab prefix display
+        if prefixDisplayLabel then
+            if currentText ~= "" then
+                prefixDisplayLabel.Text = "Current Prefix: " .. currentText
+                prefixDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+            else
+                prefixDisplayLabel.Text = "Current Prefix: (None)"
+                prefixDisplayLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
             end
         end
 
