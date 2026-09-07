@@ -1137,8 +1137,9 @@ local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 -- CONSOLE FILTER BUTTON
 local showOnlyMissing = false
 
+-- Adjusted size to make room for the copy button
 local filterBtn = Instance.new("TextButton")
-filterBtn.Size = UDim2.new(1, -20, 0, 24)
+filterBtn.Size = UDim2.new(0.75, -15, 0, 24)
 filterBtn.Position = UDim2.new(0, 10, 0, 5)
 filterBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 filterBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -1151,6 +1152,61 @@ filterBtn.Parent = consolePanel
 local filterCorner = Instance.new("UICorner")
 filterCorner.CornerRadius = UDim.new(0, 4)
 filterCorner.Parent = filterBtn
+
+-- NEW COPY BUTTON FOR MISSING PREFIXES
+local copyMissingBtn = Instance.new("TextButton")
+copyMissingBtn.Size = UDim2.new(0.25, -5, 0, 24)
+copyMissingBtn.Position = UDim2.new(0.75, 5, 0, 5)
+copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+copyMissingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyMissingBtn.Font = Enum.Font.GothamBold
+copyMissingBtn.TextSize = 10
+copyMissingBtn.Text = "📋 COPY"
+copyMissingBtn.AutoButtonColor = false
+copyMissingBtn.Parent = consolePanel
+
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0, 4)
+copyCorner.Parent = copyMissingBtn
+
+copyMissingBtn.MouseButton1Click:Connect(function()
+    local list = {}
+    for prefix, _ in pairs(missingPrefixes) do
+        table.insert(list, prefix)
+    end
+    
+    if #list > 0 then
+        local copiedText = table.concat(list, ", ")
+        if setclipboard then
+            setclipboard(copiedText)
+            
+            -- Temporary visual feedback
+            copyMissingBtn.Text = "✓ COPIED!"
+            copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+            task.delay(1.5, function()
+                if not isRunning then return end
+                copyMissingBtn.Text = "📋 COPY"
+                copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+            end)
+            
+            if logMessage then
+                logMessage("Copied missing prefixes to clipboard!", Color3.fromRGB(0, 255, 255))
+            end
+        else
+            if logMessage then
+                logMessage("Executor does not support setclipboard!", Color3.fromRGB(255, 100, 100))
+            end
+        end
+    else
+        copyMissingBtn.Text = "EMPTY!"
+        copyMissingBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        task.delay(1.5, function()
+            if not isRunning then return end
+            copyMissingBtn.Text = "📋 COPY"
+            copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        end)
+    end
+end)
 
 -- ADJUSTED SCROLL FRAME
 local scrollFrame = Instance.new("ScrollingFrame")
