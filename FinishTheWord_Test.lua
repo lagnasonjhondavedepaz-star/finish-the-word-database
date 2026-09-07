@@ -45,6 +45,7 @@ topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
 local manualLives = 2
 local longWordCount = 0
 local lastGameLives = nil
+local syncLengthModeWithLives
 
 -- LIVES / HEARTS INDICATOR
 local livesIndicator = Instance.new("TextLabel")
@@ -158,6 +159,9 @@ task.spawn(function()
         end
         
         livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/5)"
+        if syncLengthModeWithLives then
+            syncLengthModeWithLives(manualLives)
+        end
         
         if manualLives > 2 then
             livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
@@ -980,6 +984,7 @@ local function refreshTargetLengthButtons()
 end
 
 syncLengthModeWithLives = function(currentLives)
+    currentLives = tonumber(currentLives)
     local newLengthMode
     if currentLives == 2 then
         newLengthMode = 1
@@ -1728,6 +1733,9 @@ if wordToLog then
                         if longWordCount >= 5 then
                             manualLives = manualLives + 1
                             longWordCount = 0
+                            if syncLengthModeWithLives then
+                                syncLengthModeWithLives(manualLives)
+                            end
                             logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
                         else
                             logMessage("⚡ Skill Charge: " .. longWordCount .. "/5", Color3.fromRGB(0, 200, 255))
