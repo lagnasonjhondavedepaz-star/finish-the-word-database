@@ -1137,7 +1137,6 @@ local exitButton = createButton(" EXIT SCRIPT", Color3.fromRGB(120, 30, 30), 20)
 -- CONSOLE FILTER BUTTON
 local showOnlyMissing = false
 
--- Adjusted size to make room for the copy button
 local filterBtn = Instance.new("TextButton")
 filterBtn.Size = UDim2.new(0.75, -15, 0, 24)
 filterBtn.Position = UDim2.new(0, 10, 0, 5)
@@ -1169,39 +1168,107 @@ local copyCorner = Instance.new("UICorner")
 copyCorner.CornerRadius = UDim.new(0, 4)
 copyCorner.Parent = copyMissingBtn
 
+-- ADJUSTED SCROLL FRAME
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, 0, 1, -34) -- Shrunk slightly to fit button
+scrollFrame.Position = UDim2.new(0, 0, 0, 34) -- Pushed down to fit button
+scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+scrollFrame.ElasticBehavior = Enum.ElasticBehavior.Never
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = consolePanel
+
+-- CONSOLE PADDING
+local consolePadding = Instance.new("UIPadding")
+consolePadding.PaddingLeft = UDim.new(0, 10)
+consolePadding.PaddingRight = UDim.new(0, 10)
+consolePadding.PaddingTop = UDim.new(0, 5)
+consolePadding.PaddingBottom = UDim.new(0, 5)
+consolePadding.Parent = scrollFrame
+
+local uiLayout = Instance.new("UIListLayout")
+uiLayout.Parent = scrollFrame
+uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiLayout.Padding = UDim.new(0, 2)
+
+local function updateConsoleScroll()
+    local paddingY = consolePadding.PaddingTop.Offset + consolePadding.PaddingBottom.Offset
+    local contentHeight = uiLayout.AbsoluteContentSize.Y + paddingY
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    local viewHeight = scrollFrame.AbsoluteWindowSize.Y
+    if viewHeight <= 0 then
+        viewHeight = scrollFrame.AbsoluteSize.Y
+    end
+    if contentHeight > viewHeight then
+        scrollFrame.CanvasPosition = Vector2.new(0, contentHeight - viewHeight)
+    else
+        scrollFrame.CanvasPosition = Vector2.new(0, 0)
+    end
+end
+
+uiLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateConsoleScroll)
+
+local function applyLogFilter()
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") and child:GetAttribute("IsMissingPrefix") ~= nil then
+            if showOnlyMissing then
+                child.Visible = child:GetAttribute("IsMissingPrefix")
+            else
+                child.Visible = true
+            end
+        end
+    end
+    task.defer(updateConsoleScroll)
+end
+
+-- HOOK UP COPY BUTTON HERE (So it can access the scrollFrame above)
 copyMissingBtn.MouseButton1Click:Connect(function()
     local list = {}
-    for prefix, _ in pairs(missingPrefixes) do
-        table.insert(list, prefix)
+    local seen = {}
+    
+    -- Extract missing prefixes directly from the UI to avoid variable scope issues
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") and child:GetAttribute("IsMissingPrefix") == true then
+            for _, desc in ipairs(child:GetDescendants()) do
+                if desc:IsA("TextLabel") and string.find(desc.Text, "MISSING PREFIX") then
+                    local prefix = string.match(desc.Text, "%[([^%]]+)%]")
+                    if prefix and not seen[prefix] then
+                        seen[prefix] = true
+                        table.insert(list, prefix)
+                    end
+                end
+            end
+        end
     end
     
     if #list > 0 then
         local copiedText = table.concat(list, ", ")
-        if setclipboard then
-            setclipboard(copiedText)
+        local to_clipboard = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
+        
+        if to_clipboard then
+            to_clipboard(copiedText)
             
-            -- Temporary visual feedback
             copyMissingBtn.Text = "✓ COPIED!"
             copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
             task.delay(1.5, function()
-                if not isRunning then return end
                 copyMissingBtn.Text = "📋 COPY"
                 copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
             end)
-            
-            if logMessage then
-                logMessage("Copied missing prefixes to clipboard!", Color3.fromRGB(0, 255, 255))
-            end
         else
-            if logMessage then
-                logMessage("Executor does not support setclipboard!", Color3.fromRGB(255, 100, 100))
-            end
+            copyMissingBtn.Text = "❌ NO CLIPBOARD API"
+            copyMissingBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            task.delay(1.5, function()
+                copyMissingBtn.Text = "📋 COPY"
+                copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+            end)
         end
     else
         copyMissingBtn.Text = "EMPTY!"
         copyMissingBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
         task.delay(1.5, function()
-            if not isRunning then return end
             copyMissingBtn.Text = "📋 COPY"
             copyMissingBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
         end)
