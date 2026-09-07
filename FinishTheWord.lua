@@ -364,7 +364,7 @@ navLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
 local function createNavTab(text)
     local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(0, 110, 0, 28)
+    tab.Size = UDim2.new(0, 100, 0, 28) -- Scaled down slightly to fit 3 tabs perfectly
     tab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tab.TextColor3 = Color3.fromRGB(150, 150, 150)
     tab.Font = Enum.Font.GothamBold
@@ -381,6 +381,7 @@ end
 
 local settingsTab = createNavTab("⚙ SETTINGS")
 local consoleTab = createNavTab("📋 CONSOLE")
+local manualTab = createNavTab("⌨ MANUAL")
 
 -- CONTENT PANELS
 local settingsPanel = Instance.new("Frame")
@@ -401,6 +402,16 @@ consolePanel.ClipsDescendants = true
 consolePanel.Visible = true
 consolePanel.Parent = mainFrame
 
+-- NEW MANUAL PANEL
+local manualPanel = Instance.new("Frame")
+manualPanel.Size = UDim2.new(1, 0, 1, -82)
+manualPanel.Position = UDim2.new(0, 0, 0, 67)
+manualPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+manualPanel.BorderSizePixel = 0
+manualPanel.ClipsDescendants = true
+manualPanel.Visible = false
+manualPanel.Parent = mainFrame
+
 -- TAB SWITCHING
 local currentTab = "console"
 
@@ -408,27 +419,104 @@ local function switchTab(tabName)
     currentTab = tabName
     settingsPanel.Visible = (tabName == "settings")
     consolePanel.Visible = (tabName == "console")
+    manualPanel.Visible = (tabName == "manual")
     
-    -- Update tab colors
-    if tabName == "settings" then
-        settingsTab.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-        settingsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-        consoleTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        consoleTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-    else
-        settingsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        settingsTab.TextColor3 = Color3.fromRGB(150, 150, 150)
-        consoleTab.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
-        consoleTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
+    local inactiveBg = Color3.fromRGB(50, 50, 50)
+    local inactiveText = Color3.fromRGB(150, 150, 150)
+    
+    settingsTab.BackgroundColor3 = (tabName == "settings") and Color3.fromRGB(0, 180, 100) or inactiveBg
+    settingsTab.TextColor3 = (tabName == "settings") and Color3.fromRGB(255, 255, 255) or inactiveText
+    
+    consoleTab.BackgroundColor3 = (tabName == "console") and Color3.fromRGB(0, 150, 200) or inactiveBg
+    consoleTab.TextColor3 = (tabName == "console") and Color3.fromRGB(255, 255, 255) or inactiveText
+    
+    manualTab.BackgroundColor3 = (tabName == "manual") and Color3.fromRGB(200, 100, 0) or inactiveBg
+    manualTab.TextColor3 = (tabName == "manual") and Color3.fromRGB(255, 255, 255) or inactiveText
 end
 
-settingsTab.MouseButton1Click:Connect(function()
-    switchTab("settings")
-end)
+settingsTab.MouseButton1Click:Connect(function() switchTab("settings") end)
+consoleTab.MouseButton1Click:Connect(function() switchTab("console") end)
+manualTab.MouseButton1Click:Connect(function() switchTab("manual") end)
 
-consoleTab.MouseButton1Click:Connect(function()
-    switchTab("console")
+-- MANUAL PANEL CONTENT & TYPING LOGIC
+local manualLayout = Instance.new("UIListLayout")
+manualLayout.Parent = manualPanel
+manualLayout.SortOrder = Enum.SortOrder.LayoutOrder
+manualLayout.Padding = UDim.new(0, 15)
+manualLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local manualPadding = Instance.new("UIPadding")
+manualPadding.PaddingTop = UDim.new(0, 25)
+manualPadding.Parent = manualPanel
+
+local manualLabel = Instance.new("TextLabel")
+manualLabel.Size = UDim2.new(0.9, 0, 0, 20)
+manualLabel.BackgroundTransparency = 1
+manualLabel.Text = "✍️ ENTER REMAINING LETTERS:"
+manualLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+manualLabel.Font = Enum.Font.GothamBold
+manualLabel.TextSize = 12
+manualLabel.Parent = manualPanel
+
+local manualInput = Instance.new("TextBox")
+manualInput.Size = UDim2.new(0.8, 0, 0, 36)
+manualInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+manualInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+manualInput.Font = Enum.Font.GothamBold
+manualInput.TextSize = 14
+manualInput.PlaceholderText = "e.g., IXER"
+manualInput.ClearTextOnFocus = false
+manualInput.Text = ""
+manualInput.Parent = manualPanel
+
+local manualInputCorner = Instance.new("UICorner")
+manualInputCorner.CornerRadius = UDim.new(0, 6)
+manualInputCorner.Parent = manualInput
+
+local manualTypeBtn = Instance.new("TextButton")
+manualTypeBtn.Size = UDim2.new(0.8, 0, 0, 36)
+manualTypeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+manualTypeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+manualTypeBtn.Font = Enum.Font.GothamBold
+manualTypeBtn.TextSize = 12
+manualTypeBtn.Text = "⌨ TYPE & ENTER"
+manualTypeBtn.Parent = manualPanel
+
+local manualTypeCorner = Instance.new("UICorner")
+manualTypeCorner.CornerRadius = UDim.new(0, 6)
+manualTypeCorner.Parent = manualTypeBtn
+
+local isManualTyping = false
+
+local function triggerManualType()
+    if isManualTyping then return end
+    local textToType = manualInput.Text:upper():match("^[%a]*") or ""
+    if textToType == "" then return end
+    
+    isManualTyping = true
+    manualTypeBtn.Text = "⏳ TYPING..."
+    manualTypeBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    
+    task.spawn(function()
+        task.defer(function()
+            if logMessage then logMessage(">> MANUAL OVERRIDE: " .. textToType, Color3.fromRGB(255, 200, 0)) end
+        end)
+        
+        -- Reuse the automation's exact typing function and speed logic
+        typeRemainingLetters(textToType, 0, true)
+        
+        manualInput.Text = ""
+        isManualTyping = false
+        manualTypeBtn.Text = "⌨ TYPE & ENTER"
+        manualTypeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+    end)
+end
+
+manualTypeBtn.MouseButton1Click:Connect(triggerManualType)
+manualInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        triggerManualType()
+    end
 end)
 
 -- SETTINGS PANEL CONTENT
@@ -1155,7 +1243,7 @@ local function getTimestamp()
     return string.format("[%02d:%02d:%02d]", now.hour, now.min, now.sec)
 end
 
-local function logMessage(text, color)
+function logMessage(text, color)
     if not isRunning then return end
     
     local msgContainer = Instance.new("Frame")
@@ -1721,13 +1809,16 @@ task.spawn(function()
 
         if currentActivePlayer ~= lastActivePlayer then
             local wordToLog = nil
-            if longestTurnText ~= "" then
-                wordToLog = longestTurnText
+            
+            -- PRIORITY 1: The exact text on screen right before the turn ended (if valid)
+            if lastSeenText ~= "" and validWordsDict[lastSeenText] then
+                wordToLog = lastSeenText
+            -- PRIORITY 2: The last definitively valid word we saw during the turn
             elseif lastValidWord and validWordsDict[lastValidWord] then
                 wordToLog = lastValidWord
             end
 
-if wordToLog then
+            if wordToLog then
                 if not usedWords[wordToLog] then
                     usedWords[wordToLog] = true
                     logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
@@ -1737,10 +1828,10 @@ if wordToLog then
                 -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
                 if lastActivePlayer == localPlayer then
                     if #wordToLog >= 10 then
-                        if manualLives < 2 then -- Only charge the skill if we actually need a life
+                        if manualLives < 2 then 
                             longWordCount = longWordCount + 1
                             if longWordCount >= 10 then
-                                manualLives = 2 -- Max out the lives
+                                manualLives = 2 
                                 longWordCount = 0
                                 logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
                             else
@@ -1752,8 +1843,7 @@ if wordToLog then
             end
             
             lastActivePlayer = currentActivePlayer
-            lastValidWord = nil -- Reset memory for the new turn
-            longestTurnText = ""
+            lastValidWord = nil 
             
             if currentActivePlayer == localPlayer then
                 hasTriedUsedWordThisTurn = false
@@ -1764,12 +1854,9 @@ if wordToLog then
             lastSeenText = currentText
         end
 
-        -- Safety net: Remember the last valid word seen in case the GUI clears it too fast
+        -- Strictly track the most recent valid word
         if currentText ~= "" and validWordsDict[currentText] then
             lastValidWord = currentText
-        end
-        if #currentText > #longestTurnText then
-            longestTurnText = currentText
         end
         
         if isMyTurn then
@@ -1918,7 +2005,7 @@ if wordToLog then
                             pendingManualWord = nil -- Clear it if no words are found
                             currentAction = "Missing Prefix: " .. settledPrefix
                             updateToggleButton()
-                            logMessage(">> ERROR: Wala ng words para sa [" .. settledPrefix .. "]", Color3.fromRGB(255, 50, 50))
+                            
                             if not missingPrefixes[settledPrefix] then
                                 missingPrefixes[settledPrefix] = true
                                 logMessage(" NOTED MISSING PREFIX: [" .. settledPrefix .. "]", Color3.fromRGB(255, 100, 100))
