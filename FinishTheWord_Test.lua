@@ -498,32 +498,12 @@ local function triggerManualType()
     manualTypeBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
     
     task.spawn(function()
-        -- Uses a deferred call so the console registers the log properly
         task.defer(function()
             if logMessage then logMessage(">> MANUAL OVERRIDE: " .. textToType, Color3.fromRGB(255, 200, 0)) end
         end)
         
-        for i = 1, #textToType do
-            if not isRunning then break end
-            local char = string.sub(textToType, i, i)
-            local keycode = Enum.KeyCode[char]
-            
-            if keycode and isRunning then
-                VIM:SendKeyEvent(true, keycode, false, game)
-                task.wait(math.random(20, 50) / 1000) 
-                VIM:SendKeyEvent(false, keycode, false, game)
-                
-                -- Matches the exact delay formula used in the auto-typer
-                task.wait(math.random(40, 95) / 1000) 
-            end
-        end
-        
-        if isRunning then
-            task.wait(0.1)
-            VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-            task.wait(0.05)
-            VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-        end
+        -- Reuse the automation's exact typing function and speed logic
+        typeRemainingLetters(textToType, 0, true)
         
         manualInput.Text = ""
         isManualTyping = false
