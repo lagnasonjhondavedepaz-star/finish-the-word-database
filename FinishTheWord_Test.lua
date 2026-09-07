@@ -1224,22 +1224,19 @@ local function applyLogFilter()
     task.defer(updateConsoleScroll)
 end
 
--- HOOK UP COPY BUTTON HERE (So it can access the scrollFrame above)
+-- HOOK UP COPY BUTTON HERE
 copyMissingBtn.MouseButton1Click:Connect(function()
     local list = {}
     local seen = {}
     
-    -- Extract missing prefixes directly from the UI to avoid variable scope issues
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("Frame") and child:GetAttribute("IsMissingPrefix") == true then
-            for _, desc in ipairs(child:GetDescendants()) do
-                if desc:IsA("TextLabel") and string.find(desc.Text, "MISSING PREFIX") then
-                    local prefix = string.match(desc.Text, "%[([^%]]+)%]")
-                    if prefix and not seen[prefix] then
-                        seen[prefix] = true
-                        table.insert(list, prefix)
-                    end
-                end
+    -- Scan all text elements in the console to extract the exact prefixes
+    for _, desc in ipairs(scrollFrame:GetDescendants()) do
+        if desc:IsA("TextLabel") and desc.Text then
+            -- Safely match the exact pattern: "MISSING PREFIX: [PREFIX]"
+            local prefix = string.match(desc.Text, "MISSING PREFIX: %[([^%]]+)%]")
+            if prefix and not seen[prefix] then
+                seen[prefix] = true
+                table.insert(list, prefix)
             end
         end
     end
