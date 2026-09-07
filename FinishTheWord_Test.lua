@@ -16,10 +16,10 @@ screenGui.Parent = coreGui
 local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
+local typeRemainingLetters -- Add this forward declaration
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
-screenGui.AncestryChanged:Connect(function(_, parent)
-    if not parent then
+screenGui.AncestryChanged:Connect(function(_, parent)    if not parent then
         isRunning = false
     end
 end)
@@ -1569,7 +1569,7 @@ local function pressKey(charStr, keycode, holdTime)
 end
 
 -- Added a 3rd parameter: isPlayingUsedWord
-local function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
+typeRemainingLetters = function(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
     
     local willStartDelay = false
