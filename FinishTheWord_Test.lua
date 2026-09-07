@@ -1645,7 +1645,23 @@ task.spawn(function()
     
     local cachedKeyboard = nil -- Caches the keyboard to force visibility
     
+    local lastAutoSetLives = manualLives -- Tracks life changes for auto-settings
+    
     while isRunning and task.wait(0.1) do
+        -- ⚡ AUTO-ADJUST LENGTH BASED ON LIVES
+        if manualLives ~= lastAutoSetLives then
+            lastAutoSetLives = manualLives
+            if manualLives <= 1 and lengthMode ~= 2 then
+                lengthMode = 2
+                refreshTargetLengthButtons()
+                logMessage("⚠️ Lives critical! Auto-switched TARGET LENGTH to 10-19", Color3.fromRGB(255, 150, 0))
+            elseif manualLives >= 2 and lengthMode ~= 1 then
+                lengthMode = 1
+                refreshTargetLengthButtons()
+                logMessage("💚 Lives secure! Auto-switched TARGET LENGTH to 1-9", Color3.fromRGB(0, 255, 100))
+            end
+        end
+
         -- Reset the turn state if the user just enabled auto-type
         if forceReplayThisTurn then
             hasPlayedThisTurn = false
