@@ -1230,7 +1230,7 @@ copyMissingBtn.MouseButton1Click:Connect(function()
     local seen = {}
     
     -- Scan all text elements in the console to extract the exact prefixes
-    for _, desc in ipairs(scrollFrame:GetDescendants()) do
+    for _, desc in ipairs(consolePanel:GetDescendants()) do
         if desc:IsA("TextLabel") and desc.Text then
             -- Safely match the exact pattern: "MISSING PREFIX: [PREFIX]"
             local prefix = string.match(desc.Text, "MISSING PREFIX: %[([^%]]+)%]")
