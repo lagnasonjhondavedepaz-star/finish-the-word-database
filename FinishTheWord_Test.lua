@@ -162,12 +162,12 @@ task.spawn(function()
             manualLives = 2 
         end
         
-        -- Conditionally hide the (0/5) tracker if lives are full
+        -- Conditionally hide the (0/10) tracker if lives are full
         if manualLives >= 2 then
             livesIndicator.Text = "❤️ LIVES: " .. manualLives
             longWordCount = 0 -- Reset charge if we are at max lives
         else
-            livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/5)"
+            livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/10)"
         end
         
         -- Color updates
@@ -1739,12 +1739,12 @@ if wordToLog then
                     if #wordToLog >= 10 then
                         if manualLives < 2 then -- Only charge the skill if we actually need a life
                             longWordCount = longWordCount + 1
-                            if longWordCount >= 5 then
+                            if longWordCount >= 10 then
                                 manualLives = 2 -- Max out the lives
                                 longWordCount = 0
                                 logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
                             else
-                                logMessage("⚡ Skill Charge: " .. longWordCount .. "/5", Color3.fromRGB(0, 200, 255))
+                                logMessage("⚡ Skill Charge: " .. longWordCount .. "/10", Color3.fromRGB(0, 200, 255))
                             end
                         end
                     end
