@@ -41,16 +41,21 @@ topButtonsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 topButtonsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 topButtonsLayout.Padding = UDim.new(0, 8) -- Gap between the two buttons
 
+-- ⚡ GLOBAL SKILL TRACKERS
+local manualLives = 2
+local longWordCount = 0
+local lastGameLives = nil
+
 -- LIVES / HEARTS INDICATOR
 local livesIndicator = Instance.new("TextLabel")
-livesIndicator.Size = UDim2.new(0, 80, 0, 28)
+livesIndicator.Size = UDim2.new(0, 110, 0, 28) -- Slightly wider to fit the (0/5) charge text
 livesIndicator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
 livesIndicator.Font = Enum.Font.GothamBold
 livesIndicator.TextSize = 11
 livesIndicator.Text = "❤️ LIVES: -"
 livesIndicator.AutomaticSize = Enum.AutomaticSize.X
-livesIndicator.LayoutOrder = 0 -- Keeps it on the far left of the container
+livesIndicator.LayoutOrder = 0 
 livesIndicator.Parent = topButtonsContainer
 
 local livesCorner = Instance.new("UICorner")
@@ -64,7 +69,6 @@ livesPadding.Parent = livesIndicator
 
 local livesKeywords = {"life", "lives", "heart", "hearts", "health", "hp"}
 
--- Custom visibility check to avoid conflicts with the existing isVisible function
 local function isNodeVisible(gui)
     local current = gui
     while current do
@@ -79,7 +83,39 @@ local function isNodeVisible(gui)
 end
 
 local function getLivesCount()
-    -- 1. Check Attributes
+    local pGui = localPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        local heartCount = 0
+        local foundUI = false
+        for _, obj in ipairs(pGui:GetDescendants()) do
+            if isNodeVisible(obj) then
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    if obj.ImageTransparency < 0.5 then
+                        local name = string.lower(obj.Name)
+                        local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                        if not string.find(name, "empty") and not string.find(name, "bg") then
+                            for _, word in ipairs(livesKeywords) do
+                                if string.find(name, word) or string.find(parentName, word) then
+                                    foundUI = true
+                                    heartCount = heartCount + 1
+                                    break
+                                end
+                            end
+                        end
+                    end
+                elseif obj:IsA("TextLabel") then
+                    local _, c1 = string.gsub(obj.Text, "❤", "")
+                    local _, c2 = string.gsub(obj.Text, "♥", "")
+                    if (c1 + c2) > 0 then
+                        foundUI = true
+                        heartCount = heartCount + (c1 + c2)
+                    end
+                end
+            end
+        end
+        if foundUI then return heartCount end
+    end
+
     local function checkAttrs(target)
         if not target then return nil end
         for k, v in pairs(target:GetAttributes()) do
@@ -89,11 +125,9 @@ local function getLivesCount()
             end
         end
     end
-    
     local attrLives = checkAttrs(localPlayer) or checkAttrs(localPlayer.Character)
     if attrLives then return attrLives end
 
-    -- 2. Check Values
     for _, obj in ipairs(localPlayer:GetDescendants()) do
         if obj:IsA("IntValue") or obj:IsA("NumberValue") then
             local lowerName = string.lower(obj.Name)
@@ -102,56 +136,47 @@ local function getLivesCount()
             end
         end
     end
-
-    -- 3. Check Physical UI
-    local pGui = localPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        local heartCount = 0
-        local foundUI = false
-        
-        for _, obj in ipairs(pGui:GetDescendants()) do
-            if isNodeVisible(obj) then
-                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-                    local name = string.lower(obj.Name)
-                    local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
-                    
-                    for _, word in ipairs(livesKeywords) do
-                        if string.find(name, word) or string.find(parentName, word) then
-                            foundUI = true
-                            heartCount = heartCount + 1
-                            break
-                        end
-                    end
-                elseif obj:IsA("TextLabel") then
-                    if string.find(obj.Text, "❤") or string.find(obj.Text, "♥") or string.find(obj.Text, "❤️") then
-                        local _, count = string.gsub(obj.Text, "[❤♥]+", "")
-                        if count > 0 then return count end
-                    end
-                end
-            end
-        end
-        
-        if foundUI then return heartCount end
-    end
-
     return "?"
 end
 
 task.spawn(function()
     while isRunning and task.wait(0.5) do
-        local currentLives = getLivesCount()
-        livesIndicator.Text = "❤️ LIVES: " .. tostring(currentLives)
+        local gameLives = getLivesCount()
         
-        if type(currentLives) == "number" then
-            if currentLives > 2 then
-                livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
-            elseif currentLives == 2 then
-                livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
-            else
-                livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
+        if type(gameLives) == "number" then
+            if lastGameLives == nil then
+                lastGameLives = gameLives
+                manualLives = gameLives
             end
+            
+            -- State Tracker: Calculates when the game physically removes a life
+            local delta = gameLives - lastGameLives
+            if delta ~= 0 then
+                manualLives = manualLives + delta
+                lastGameLives = gameLives
+            end
+        end
+        
+        -- Cap max lives at 2
+        if manualLives > 2 then 
+            manualLives = 2 
+        end
+        
+        -- Conditionally hide the (0/5) tracker if lives are full
+        if manualLives >= 2 then
+            livesIndicator.Text = "❤️ LIVES: " .. manualLives
+            longWordCount = 0 -- Reset charge if we are at max lives
         else
-            livesIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
+            livesIndicator.Text = "❤️ LIVES: " .. manualLives .. " (" .. longWordCount .. "/5)"
+        end
+        
+        -- Color updates
+        if manualLives >= 2 then
+            livesIndicator.TextColor3 = Color3.fromRGB(0, 255, 120)
+        elseif manualLives == 1 then
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 200, 50)
+        else
+            livesIndicator.TextColor3 = Color3.fromRGB(255, 60, 60)
         end
     end
 end)
@@ -1686,10 +1711,28 @@ task.spawn(function()
                 wordToLog = lastValidWord
             end
 
-            if wordToLog and not usedWords[wordToLog] then
-                usedWords[wordToLog] = true
-                logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
-                updateToggleButton() -- Instantly update the UI counter
+if wordToLog then
+                if not usedWords[wordToLog] then
+                    usedWords[wordToLog] = true
+                    logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
+                    updateToggleButton() 
+                end
+
+                -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
+                if lastActivePlayer == localPlayer then
+                    if #wordToLog >= 10 then
+                        if manualLives < 2 then -- Only charge the skill if we actually need a life
+                            longWordCount = longWordCount + 1
+                            if longWordCount >= 5 then
+                                manualLives = 2 -- Max out the lives
+                                longWordCount = 0
+                                logMessage("❤️ SKILL TRIGGERED: +1 Life!", Color3.fromRGB(0, 255, 100))
+                            else
+                                logMessage("⚡ Skill Charge: " .. longWordCount .. "/5", Color3.fromRGB(0, 200, 255))
+                            end
+                        end
+                    end
+                end
             end
             
             lastActivePlayer = currentActivePlayer
