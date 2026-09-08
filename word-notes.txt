@@ -44296,3 +44296,10 @@ Majuro
 Majuscular
 Majuscule
 Majuscules
+Eudaemon
+Eudaemonia
+Eudaemonias
+Eudaemonic
+Eudaemons
+Eudaimonia
+Eudaimonias
