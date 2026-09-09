@@ -16,6 +16,8 @@ screenGui.Parent = coreGui
 local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
+local currentPrefix = ""
+local currentSolveCount = 0
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
 screenGui.AncestryChanged:Connect(function(_, parent)
@@ -243,7 +245,8 @@ local function updateToggleButton()
     for _ in pairs(usedWords) do count = count + 1 end
     
     local statePrefix = mainFrame.Visible and "◉ CONSOLE" or "○ HIDDEN"
-    toggleBtn.Text = statePrefix .. " | Used: " .. count .. " | " .. currentAction
+    local solveStatus = currentPrefix ~= "" and (" | Current Prefix: " .. currentPrefix .. " | Solves: " .. currentSolveCount) or ""
+    toggleBtn.Text = statePrefix .. " | Used: " .. count .. solveStatus .. " | " .. currentAction
     
     if mainFrame.Visible then
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
@@ -1639,9 +1642,25 @@ else
     return
 end
 
+local function updateCurrentPrefix(prefix)
+    currentPrefix = prefix or ""
+    currentSolveCount = 0
+
+    if currentPrefix ~= "" then
+        for _, word in ipairs(wordsTable) do
+            if string.sub(word, 1, #currentPrefix) == currentPrefix and not usedWords[word] then
+                currentSolveCount = currentSolveCount + 1
+            end
+        end
+    end
+
+    updateToggleButton()
+end
+
 local function clearBlacklist()
     usedWords = {}
     missingPrefixes = {}
+    updateCurrentPrefix(currentPrefix)
     currentAction = "Waiting..." -- Resets the status text
     updateToggleButton()         -- Refreshes the UI button instantly
     logMessage("--- BLACKLIST CLEARED ---", Color3.fromRGB(255, 255, 0))
@@ -1991,7 +2010,7 @@ task.spawn(function()
                 if not usedWords[wordToLog] then
                     usedWords[wordToLog] = true
                     logMessage("[BLACKLIST] " .. wordToLog, Color3.fromRGB(255, 150, 0))
-                    updateToggleButton() 
+                    updateCurrentPrefix(currentPrefix)
                 end
 
                 -- ⚡ SKILL TRACKER: Count 10+ letter words submitted on YOUR turn
@@ -2039,6 +2058,7 @@ task.spawn(function()
                     local settledPrefix = readInputBox()
                     
                     if settledPrefix ~= "" then
+                        updateCurrentPrefix(settledPrefix)
                         logMessage("MY TURN! Prefix: [" .. settledPrefix .. "]", Color3.fromRGB(0, 255, 0))
                         
                         local fallbackMatches = {}
