@@ -28,7 +28,7 @@ end)
 
 -- TOP BUTTONS CONTAINER (Keeps them centered side-by-side)
 local topButtonsContainer = Instance.new("Frame")
-topButtonsContainer.Size = UDim2.new(0, 0, 0, 28)
+topButtonsContainer.Size = UDim2.new(0, 0, 0, 52)
 topButtonsContainer.Position = UDim2.new(0.5, 0, 0, -35)
 topButtonsContainer.AnchorPoint = Vector2.new(0.5, 0)
 topButtonsContainer.BackgroundTransparency = 1
@@ -185,7 +185,7 @@ end)
 
 -- FLOATING TOGGLE BUTTON
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 100, 0, 28)
+toggleBtn.Size = UDim2.new(0, 100, 0, 52)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Font = Enum.Font.GothamBold
@@ -245,8 +245,8 @@ local function updateToggleButton()
     for _ in pairs(usedWords) do count = count + 1 end
     
     local statePrefix = mainFrame.Visible and "◉ CONSOLE" or "○ HIDDEN"
-    local solveStatus = currentPrefix ~= "" and (" | Current Prefix: " .. currentPrefix .. " | Solves: " .. currentSolveCount) or ""
-    toggleBtn.Text = statePrefix .. " | Used: " .. count .. solveStatus .. " | " .. currentAction
+    local solveStatus = "Current Prefix: " .. currentPrefix .. " | Solves: " .. currentSolveCount
+    toggleBtn.Text = statePrefix .. "\nUsed: " .. count .. " | " .. currentAction .. "\n" .. solveStatus
     
     if mainFrame.Visible then
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
