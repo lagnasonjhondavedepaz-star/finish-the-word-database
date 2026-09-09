@@ -27,7 +27,7 @@ end)
 -- TOP BUTTONS CONTAINER (Keeps them centered side-by-side)
 local topButtonsContainer = Instance.new("Frame")
 topButtonsContainer.Size = UDim2.new(0, 0, 0, 28)
-topButtonsContainer.Position = UDim2.new(0.5, 0, 0, 0)
+topButtonsContainer.Position = UDim2.new(0.5, 0, 0, -5)
 topButtonsContainer.AnchorPoint = Vector2.new(0.5, 0)
 topButtonsContainer.BackgroundTransparency = 1
 topButtonsContainer.AutomaticSize = Enum.AutomaticSize.X
