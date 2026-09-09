@@ -1758,6 +1758,12 @@ end
 -- Added a 3rd parameter: isPlayingUsedWord
 function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     local suffix = string.sub(fullWord, prefixLength + 1)
+    local solveThresholdDelay = 0
+    if currentSolveCount < 15 then
+        solveThresholdDelay = 3
+    elseif currentSolveCount < 50 then
+        solveThresholdDelay = 2
+    end
     
     local willStartDelay = false
     if #fullWord >= 10 then
@@ -1766,6 +1772,10 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         willStartDelay = (math.random(1, 100) <= 50)
     end
     
+    if solveThresholdDelay > 0 then
+        task.wait(solveThresholdDelay)
+    end
+
     if willStartDelay then
         task.wait(2)
     else
