@@ -244,9 +244,8 @@ local function updateToggleButton()
     local count = 0
     for _ in pairs(usedWords) do count = count + 1 end
     
-    local statePrefix = mainFrame.Visible and "◉ CONSOLE" or "○ HIDDEN"
     local solveStatus = "Current Prefix: " .. currentPrefix .. " | Solves: " .. currentSolveCount
-    toggleBtn.Text = statePrefix .. "\nUsed: " .. count .. " | " .. currentAction .. "\n" .. solveStatus
+    toggleBtn.Text = "Used: " .. count .. " | " .. currentAction .. "\n" .. solveStatus
     
     if mainFrame.Visible then
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
