@@ -16,11 +16,6 @@ screenGui.Parent = coreGui
 local isRunning = true
 local usedWords = {}
 local currentAction = "Waiting..."
-local automationSpeedMultiplier = 1
-
-local function automationWait(seconds)
-    task.wait(seconds * automationSpeedMultiplier)
-end
 
 -- Instantly stops old loops if the script is re-executed and the UI is replaced/destroyed
 screenGui.AncestryChanged:Connect(function(_, parent)
@@ -32,7 +27,7 @@ end)
 -- TOP BUTTONS CONTAINER (Keeps them centered side-by-side)
 local topButtonsContainer = Instance.new("Frame")
 topButtonsContainer.Size = UDim2.new(0, 0, 0, 28)
-topButtonsContainer.Position = UDim2.new(0.5, 0, 0, -15)
+topButtonsContainer.Position = UDim2.new(0.5, 0, 0, -25)
 topButtonsContainer.AnchorPoint = Vector2.new(0.5, 0)
 topButtonsContainer.BackgroundTransparency = 1
 topButtonsContainer.AutomaticSize = Enum.AutomaticSize.X
@@ -611,51 +606,51 @@ end
 autoAnswerToggle.MouseButton1Click:Connect(toggleAutoAnswerState)
 miniAutoToggleBtn.MouseButton1Click:Connect(toggleAutoAnswerState)
 
--- Automation Speed
-local automationSpeedContainer = Instance.new("Frame")
-automationSpeedContainer.Size = UDim2.new(1, 0, 0, 34)
-automationSpeedContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-automationSpeedContainer.BorderSizePixel = 0
-automationSpeedContainer.Parent = settingsScroll
+-- Typo Toggle
+local typoContainer = Instance.new("Frame")
+typoContainer.Size = UDim2.new(1, 0, 0, 34)
+typoContainer.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+typoContainer.BorderSizePixel = 0
+typoContainer.Parent = settingsScroll
 
-local automationSpeedLabel = Instance.new("TextLabel")
-automationSpeedLabel.Size = UDim2.new(1, -110, 1, 0)
-automationSpeedLabel.BackgroundTransparency = 1
-automationSpeedLabel.Text = "⚙ AUTOMATION SPEED"
-automationSpeedLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-automationSpeedLabel.Font = Enum.Font.GothamBold
-automationSpeedLabel.TextSize = 11
-automationSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-automationSpeedLabel.Parent = automationSpeedContainer
+local typoLabel = Instance.new("TextLabel")
+typoLabel.Size = UDim2.new(1, -110, 1, 0)
+typoLabel.BackgroundTransparency = 1
+typoLabel.Text = "✍️ TYPOS"
+typoLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+typoLabel.Font = Enum.Font.GothamBold
+typoLabel.TextSize = 11
+typoLabel.TextXAlignment = Enum.TextXAlignment.Left
+typoLabel.Parent = typoContainer
 
-local automationSpeedPadding = Instance.new("UIPadding")
-automationSpeedPadding.PaddingLeft = UDim.new(0, 10)
-automationSpeedPadding.Parent = automationSpeedLabel
+local typoLabelPadding = Instance.new("UIPadding")
+typoLabelPadding.PaddingLeft = UDim.new(0, 10)
+typoLabelPadding.Parent = typoLabel
 
-local automationSpeedToggle = Instance.new("TextButton")
-automationSpeedToggle.Size = UDim2.new(0, 100, 0, 26)
-automationSpeedToggle.Position = UDim2.new(1, -106, 0.5, -13)
-automationSpeedToggle.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-automationSpeedToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-automationSpeedToggle.Font = Enum.Font.GothamBold
-automationSpeedToggle.TextSize = 11
-automationSpeedToggle.Text = "NORMAL"
-automationSpeedToggle.AutoButtonColor = false
-automationSpeedToggle.Parent = automationSpeedContainer
+local typoToggle = Instance.new("TextButton")
+typoToggle.Size = UDim2.new(0, 100, 0, 26)
+typoToggle.Position = UDim2.new(1, -106, 0.5, -13)
+typoToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+typoToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+typoToggle.Font = Enum.Font.GothamBold
+typoToggle.TextSize = 11
+typoToggle.Text = "✓ ENABLED"
+typoToggle.Parent = typoContainer
 
-local automationSpeedCorner = Instance.new("UICorner")
-automationSpeedCorner.CornerRadius = UDim.new(0, 6)
-automationSpeedCorner.Parent = automationSpeedToggle
+local typoToggleCorner = Instance.new("UICorner")
+typoToggleCorner.CornerRadius = UDim.new(0, 6)
+typoToggleCorner.Parent = typoToggle
 
-automationSpeedToggle.MouseButton1Click:Connect(function()
-    if automationSpeedMultiplier == 1 then
-        automationSpeedMultiplier = 1.1
-        automationSpeedToggle.BackgroundColor3 = Color3.fromRGB(40, 100, 200)
-        automationSpeedToggle.Text = "SLOW"
+local typoEnabled = true
+
+typoToggle.MouseButton1Click:Connect(function()
+    typoEnabled = not typoEnabled
+    if typoEnabled then
+        typoToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        typoToggle.Text = "✓ ENABLED"
     else
-        automationSpeedMultiplier = 1
-        automationSpeedToggle.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-        automationSpeedToggle.Text = "NORMAL"
+        typoToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+        typoToggle.Text = "✗ DISABLED"
     end
 end)
 
@@ -1156,7 +1151,7 @@ end)
 
 -- ASSIGN EXPLICIT LAYOUT ORDERS TO REORDER THE SETTINGS
 autoAnswerContainer.LayoutOrder = 1
-automationSpeedContainer.LayoutOrder = 2
+typoContainer.LayoutOrder = 2
 tryUsedWordContainer.LayoutOrder = 3
 usedWordsLabel.LayoutOrder = 4
 priorityContainer.LayoutOrder = 5
@@ -1730,13 +1725,13 @@ local function pressKey(charStr, keycode, holdTime)
         local centerY = absPos.Y + (absSize.Y / 2) + guiInset.Y
         
         VIM:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
-        automationWait(holdTime or 0.03)
+        task.wait(holdTime or 0.03)
         VIM:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
     else
         -- Fallback to invisible hardware spoofing if UI is missing
         if keycode then
             VIM:SendKeyEvent(true, keycode, false, game)
-            automationWait(holdTime or 0.03)
+            task.wait(holdTime or 0.03)
             VIM:SendKeyEvent(false, keycode, false, game)
         end
     end
@@ -1754,12 +1749,12 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     end
     
     if willStartDelay then
-        automationWait(2)
+        task.wait(2)
     else
         if prefixLength >= 2 then
-            automationWait(math.random(1500, 3000) / 1000)
+            task.wait(math.random(1500, 3000) / 1000)
         else
-            automationWait(math.random(500, 1500) / 1000)
+            task.wait(math.random(500, 1500) / 1000)
         end
     end
     
@@ -1771,7 +1766,7 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
     end
     
     -- Disabled typos if isPlayingUsedWord is true
-    local willMakeTypo = (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
+    local willMakeTypo = typoEnabled and (not isPlayingUsedWord) and (math.random(1, 100) <= typoRate)
     local typoIndex = -1
     local typoType = 1
     
@@ -1805,22 +1800,22 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
                     local wrongKeycode = Enum.KeyCode[correctChar]
                     if wrongKeycode then
                         VIM:SendKeyEvent(true, wrongKeycode, false, game)
-                        automationWait(math.random(20, 50) / 1000)
+                        task.wait(math.random(20, 50) / 1000) 
                         VIM:SendKeyEvent(false, wrongKeycode, false, game)
-                        automationWait(math.random(60, 150) / 1000)
+                        task.wait(math.random(60, 150) / 1000)
                     end
                 end
                 
-                automationWait(math.random(250, 500) / 1000)
+                task.wait(math.random(250, 500) / 1000)
                 
                 if isRunning then
                     VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                    automationWait(math.random(20, 40) / 1000)
+                    task.wait(math.random(20, 40) / 1000)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    automationWait(math.random(80, 150) / 1000)
+                    task.wait(math.random(80, 150) / 1000)
                 end
                 
-                automationWait(math.random(150, 250) / 1000)
+                task.wait(math.random(150, 250) / 1000)
                 currentStreak = 0 
                 skipNormalTyping = true 
                 
@@ -1836,21 +1831,21 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
                 local wrongKeycode = Enum.KeyCode[wrongChar]
                 if wrongKeycode and isRunning then
                     VIM:SendKeyEvent(true, wrongKeycode, false, game)
-                    automationWait(math.random(20, 50) / 1000)
+                    task.wait(math.random(20, 50) / 1000) 
                     VIM:SendKeyEvent(false, wrongKeycode, false, game)
-                    automationWait(math.random(60, 150) / 1000)
+                    task.wait(math.random(60, 150) / 1000)
                 end
                 
-                automationWait(math.random(250, 500) / 1000)
+                task.wait(math.random(250, 500) / 1000)
                 
                 if isRunning then
                     VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                    automationWait(math.random(20, 40) / 1000)
+                    task.wait(math.random(20, 40) / 1000)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                    automationWait(math.random(80, 150) / 1000)
+                    task.wait(math.random(80, 150) / 1000)
                 end
                 
-                automationWait(math.random(150, 250) / 1000)
+                task.wait(math.random(150, 250) / 1000)
                 currentStreak = 0 
                 skipNormalTyping = false 
             end
@@ -1858,31 +1853,31 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
         if not skipNormalTyping and keycode and isRunning then
             VIM:SendKeyEvent(true, keycode, false, game)
-            automationWait(math.random(20, 50) / 1000)
+            task.wait(math.random(20, 50) / 1000) 
             VIM:SendKeyEvent(false, keycode, false, game)
             
             currentStreak = currentStreak + 1
             
             if currentStreak >= charsBeforePause then
                 if #fullWord >= 15 then
-                    automationWait(math.random(200, 450) / 1000)
+                    task.wait(math.random(200, 450) / 1000)
                 elseif #fullWord > 8 then
-                    automationWait(math.random(150, 300) / 1000)
+                    task.wait(math.random(150, 300) / 1000)
                 else
-                    automationWait(math.random(100, 250) / 1000)
+                    task.wait(math.random(100, 250) / 1000)
                 end
                 currentStreak = 0
                 charsBeforePause = math.random(1, 3)
             else
-                automationWait(math.random(40, 95) / 1000)
+                task.wait(math.random(40, 95) / 1000)
             end
             
             if #fullWord >= 15 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 15 then
                 doubleCheckCount = doubleCheckCount + 1
-                automationWait(math.random(500, 1000) / 1000)
+                task.wait(math.random(500, 1000) / 1000) 
             elseif #fullWord > 8 and doubleCheckCount < maxDoubleChecks and math.random(1, 100) <= 8 then
                 doubleCheckCount = doubleCheckCount + 1
-                automationWait(math.random(400, 800) / 1000)
+                task.wait(math.random(400, 800) / 1000) 
             end
         end
     end
@@ -1891,7 +1886,7 @@ function typeRemainingLetters(fullWord, prefixLength, isPlayingUsedWord)
         
     if isRunning then
         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        automationWait(0.05)
+        task.wait(0.05)
         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
     end
 end
@@ -2038,7 +2033,7 @@ task.spawn(function()
                 hasPlayedThisTurn = true 
                 
                 task.spawn(function()
-                    automationWait(0.3) 
+                    task.wait(0.3) 
                     if not isRunning then return end
                     
                     local settledPrefix = readInputBox()
@@ -2154,19 +2149,19 @@ task.spawn(function()
                                 -- If we purposefully played a used word, wait 1s for the game to reject it, 
                                 -- backspace the letters we added, then reset hasPlayedThisTurn.
                                 if isPlayingUsedWord then
-                                    automationWait(1)
+                                    task.wait(1)
                                     logMessage("Removing used word to try a valid one...", Color3.fromRGB(255, 100, 255))
                                     
                                     local charsToRemove = #chosenWord - #settledPrefix
                                     for b = 1, charsToRemove do
                                         if not isRunning then break end
                                         VIM:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
-                                        automationWait(math.random(30, 60) / 1000) -- Slightly varied hold time
+                                        task.wait(math.random(30, 60) / 1000) -- Slightly varied hold time
                                         VIM:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
-                                        automationWait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
+                                        task.wait(math.random(100, 250) / 1000) -- Slower, human-like delay between presses
                                     end
                                     
-                                    automationWait(0.5) -- Wait for the game GUI to process the backspaces
+                                    task.wait(0.5) -- Wait for the game GUI to process the backspaces
                                     hasPlayedThisTurn = false
                                 end
                             else
